@@ -1,6 +1,6 @@
 [project]
 name = "mcpydoc"
-version = "0.1.0"
+version = "0.1.1"
 description = "Model Context Protocol (MCP) server providing documentation and code analysis for Python packages"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -29,9 +29,12 @@ Issues = "https://github.com/amit608/MCPyDoc/issues"
 dev = [
     "pytest>=7.0.0",
     "pytest-asyncio>=0.21.0",
+    "pytest-cov>=4.0.0",
     "black>=22.0.0",
     "mypy>=1.0.0",
     "isort>=5.0.0",
+    "build>=0.10.0",
+    "twine>=4.0.0",
 ]
 
 [build-system]

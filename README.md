@@ -24,22 +24,13 @@ MCPyDoc is a Model Context Protocol (MCP) server that provides comprehensive doc
 ### Installation
 
 ```bash
-# Clone the repository
-git clone https://github.com/mcpydoc/mcpydoc.git
-cd mcpydoc
+# Install from PyPI (Recommended)
+pip install mcpydoc
 
-# Install the package
+# Or install from source
+git clone https://github.com/amit608/MCPyDoc.git
+cd MCPyDoc
 pip install .
-```
-
-### Verify Installation
-
-```bash
-# Run all tests to ensure everything works
-pytest tests/ -v
-
-# Run with coverage
-pytest tests/ --cov=mcpydoc --cov-report=html
 ```
 
 Once installed and configured with your AI agent, the server will automatically start when needed.
@@ -62,15 +53,6 @@ Add MCPyDoc to your Cline MCP configuration:
   }
 }
 ```
-
-### Available Tools
-
-Once configured, Cline will have access to these tools:
-
-- **`get_package_docs`** - Get comprehensive documentation for Python packages
-- **`search_symbols`** - Search for classes, functions, and modules
-- **`get_source_code`** - Retrieve actual source code
-- **`analyze_structure`** - Analyze complete package structure
 
 ### Recommended Cline Rules
 
