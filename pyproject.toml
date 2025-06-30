@@ -76,6 +76,8 @@ line_length = 88
 known_first_party = ["mcpydoc"]
 known_third_party = ["pytest", "pydantic", "docstring_parser"]
 
+# TODO: Re-enable MyPy in CI once type annotations are comprehensively fixed
+# Currently disabled due to 56 type annotation issues that need systematic resolution
 [tool.mypy]
 python_version = "3.9"
 warn_return_any = true
