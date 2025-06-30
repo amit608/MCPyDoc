@@ -3,8 +3,9 @@
 Command-line entry point for MCPyDoc MCP server.
 """
 
-import sys
 import asyncio
+import sys
+
 from .mcp_server import main
 
 if __name__ == "__main__":

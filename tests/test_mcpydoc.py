@@ -37,8 +37,9 @@ async def test_search_package_symbols(server):
     results = await server.search_package_symbols("pytest")
     assert len(results) > 0
     # Verify we found some public symbols (not starting with _)
-    assert any(not r.symbol.name.startswith("_") for r in results), \
-        "No public symbols found in pytest"
+    assert any(
+        not r.symbol.name.startswith("_") for r in results
+    ), "No public symbols found in pytest"
 
 
 @pytest.mark.asyncio
@@ -84,8 +85,8 @@ async def test_documentation_parsing(server):
         result = results[0]
         assert result.documentation is not None
         # Should have some documentation fields populated
-        assert hasattr(result.documentation, 'description')
-        assert hasattr(result.documentation, 'params')
+        assert hasattr(result.documentation, "description")
+        assert hasattr(result.documentation, "params")
 
 
 @pytest.mark.asyncio
@@ -93,19 +94,21 @@ async def test_type_hints_extraction(server):
     """Test type hints extraction."""
     # Test with a function that likely has type hints
     results = await server.search_package_symbols("pytest")
-    
+
     # Find a result with type hints
     typed_result = None
     for result in results:
         if result.type_hints:
             typed_result = result
             break
-    
+
     # If we found one, verify the structure
     if typed_result:
         assert isinstance(typed_result.type_hints, dict)
-        assert all(isinstance(k, str) and isinstance(v, str) 
-                  for k, v in typed_result.type_hints.items())
+        assert all(
+            isinstance(k, str) and isinstance(v, str)
+            for k, v in typed_result.type_hints.items()
+        )
 
 
 @pytest.mark.asyncio
@@ -114,7 +117,7 @@ async def test_version_handling(server):
     # Test that we can get package info without specifying version
     info = server.analyzer.get_package_info("pytest")
     assert info.version is not None
-    
+
     # Test with specific version (should work with current version)
     info_versioned = server.analyzer.get_package_info("pytest", info.version)
     assert info_versioned.version == info.version
@@ -124,31 +127,38 @@ async def test_version_handling(server):
 async def test_symbol_kinds(server):
     """Test that different symbol kinds are properly identified."""
     structure = await server.analyze_package_structure("pytest")
-    
+
     # Check that we're categorizing symbols correctly
-    all_symbols = (structure.modules + structure.classes + 
-                  structure.functions + structure.other)
-    
+    all_symbols = (
+        structure.modules + structure.classes + structure.functions + structure.other
+    )
+
     assert len(all_symbols) > 0
-    
+
     # Verify symbol kinds are properly set
     for symbol_result in all_symbols:
         assert symbol_result.symbol.kind in [
-            "module", "class", "function", "method", "builtin", "property", "other"
+            "module",
+            "class",
+            "function",
+            "method",
+            "builtin",
+            "property",
+            "other",
         ]
 
 
-@pytest.mark.asyncio 
+@pytest.mark.asyncio
 async def test_caching_behavior(server):
     """Test that caching works correctly."""
     # First call should populate cache
     info1 = server.analyzer.get_package_info("pytest")
-    
+
     # Second call should use cache (should be fast and identical)
     info2 = server.analyzer.get_package_info("pytest")
-    
+
     assert info1.name == info2.name
     assert info1.version == info2.version
-    
+
     # Verify cache is actually being used by checking internal state
     assert "pytest" in server.analyzer._version_cache

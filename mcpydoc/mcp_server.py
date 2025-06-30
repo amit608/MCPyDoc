@@ -8,20 +8,20 @@ to expose MCPyDoc functionality as tools that can be used by MCP clients like Cl
 
 import asyncio
 import json
+import logging
 import sys
 from typing import Any, Dict, Optional, Union
-import logging
 
-from .server import MCPyDoc
-from .security import (
-    validate_package_name,
-    validate_version,
-    validate_symbol_path,
-    audit_log,
-)
 from .exceptions import (
     ValidationError,
 )
+from .security import (
+    audit_log,
+    validate_package_name,
+    validate_symbol_path,
+    validate_version,
+)
+from .server import MCPyDoc
 
 
 class MCPServer:
@@ -32,26 +32,27 @@ class MCPServer:
         self.request_id = 0
         self.logger = logging.getLogger(__name__)
 
-    def _create_response(self, request_id: Optional[Union[str, int]], result: Any = None, error: Dict[str, Any] = None) -> Dict[str, Any]:
+    def _create_response(
+        self,
+        request_id: Optional[Union[str, int]],
+        result: Any = None,
+        error: Dict[str, Any] = None,
+    ) -> Dict[str, Any]:
         """Create a JSON-RPC response."""
-        response = {
-            "jsonrpc": "2.0",
-            "id": request_id
-        }
-        
+        response = {"jsonrpc": "2.0", "id": request_id}
+
         if error:
             response["error"] = error
         else:
             response["result"] = result
-            
+
         return response
 
-    def _create_error(self, code: int, message: str, data: Any = None) -> Dict[str, Any]:
+    def _create_error(
+        self, code: int, message: str, data: Any = None
+    ) -> Dict[str, Any]:
         """Create a JSON-RPC error object."""
-        error = {
-            "code": code,
-            "message": message
-        }
+        error = {"code": code, "message": message}
         if data:
             error["data"] = data
         return error
@@ -60,14 +61,8 @@ class MCPServer:
         """Handle MCP initialize request."""
         return {
             "protocolVersion": "2024-11-05",
-            "capabilities": {
-                "tools": {},
-                "resources": {}
-            },
-            "serverInfo": {
-                "name": "mcpydoc",
-                "version": "0.1.0"
-            }
+            "capabilities": {"tools": {}, "resources": {}},
+            "serverInfo": {"name": "mcpydoc", "version": "0.1.0"},
         }
 
     async def _handle_tools_list(self, params: Dict[str, Any]) -> Dict[str, Any]:
@@ -82,19 +77,19 @@ class MCPServer:
                         "properties": {
                             "package_name": {
                                 "type": "string",
-                                "description": "Name of the Python package to analyze"
+                                "description": "Name of the Python package to analyze",
                             },
                             "module_path": {
                                 "type": "string",
-                                "description": "Optional dot-separated path to specific module/class within the package"
+                                "description": "Optional dot-separated path to specific module/class within the package",
                             },
                             "version": {
                                 "type": "string",
-                                "description": "Optional specific version to use"
-                            }
+                                "description": "Optional specific version to use",
+                            },
                         },
-                        "required": ["package_name"]
-                    }
+                        "required": ["package_name"],
+                    },
                 },
                 {
                     "name": "search_symbols",
@@ -104,19 +99,19 @@ class MCPServer:
                         "properties": {
                             "package_name": {
                                 "type": "string",
-                                "description": "Name of the Python package to search"
+                                "description": "Name of the Python package to search",
                             },
                             "pattern": {
                                 "type": "string",
-                                "description": "Search pattern to filter symbols (case-insensitive substring match)"
+                                "description": "Search pattern to filter symbols (case-insensitive substring match)",
                             },
                             "version": {
                                 "type": "string",
-                                "description": "Optional specific version to use"
-                            }
+                                "description": "Optional specific version to use",
+                            },
                         },
-                        "required": ["package_name"]
-                    }
+                        "required": ["package_name"],
+                    },
                 },
                 {
                     "name": "get_source_code",
@@ -126,19 +121,19 @@ class MCPServer:
                         "properties": {
                             "package_name": {
                                 "type": "string",
-                                "description": "Name of the Python package containing the symbol"
+                                "description": "Name of the Python package containing the symbol",
                             },
                             "symbol_name": {
-                                "type": "string", 
-                                "description": "Dot-separated path to the symbol (e.g., 'loads' or 'encoder.JSONEncoder')"
+                                "type": "string",
+                                "description": "Dot-separated path to the symbol (e.g., 'loads' or 'encoder.JSONEncoder')",
                             },
                             "version": {
                                 "type": "string",
-                                "description": "Optional specific version to use"
-                            }
+                                "description": "Optional specific version to use",
+                            },
                         },
-                        "required": ["package_name", "symbol_name"]
-                    }
+                        "required": ["package_name", "symbol_name"],
+                    },
                 },
                 {
                     "name": "analyze_structure",
@@ -148,16 +143,16 @@ class MCPServer:
                         "properties": {
                             "package_name": {
                                 "type": "string",
-                                "description": "Name of the Python package to analyze"
+                                "description": "Name of the Python package to analyze",
                             },
                             "version": {
                                 "type": "string",
-                                "description": "Optional specific version to use"
-                            }
+                                "description": "Optional specific version to use",
+                            },
                         },
-                        "required": ["package_name"]
-                    }
-                }
+                        "required": ["package_name"],
+                    },
+                },
             ]
         }
 
@@ -180,22 +175,14 @@ class MCPServer:
 
             return {
                 "content": [
-                    {
-                        "type": "text",
-                        "text": json.dumps(result, indent=2, default=str)
-                    }
+                    {"type": "text", "text": json.dumps(result, indent=2, default=str)}
                 ]
             }
 
         except Exception as e:
             return {
                 "isError": True,
-                "content": [
-                    {
-                        "type": "text",
-                        "text": f"Error: {str(e)}"
-                    }
-                ]
+                "content": [{"type": "text", "text": f"Error: {str(e)}"}],
             }
 
     async def _get_package_docs(self, args: Dict[str, Any]) -> Dict[str, Any]:
@@ -206,15 +193,20 @@ class MCPServer:
 
         if not package_name:
             raise ValueError("package_name is required")
-        
+
         # Validate inputs
         validate_package_name(package_name)
         if module_path:
             validate_symbol_path(module_path)
         validate_version(version)
-        
+
         # Audit log the operation
-        audit_log("mcp_get_package_docs", package_name=package_name, module_path=module_path, version=version)
+        audit_log(
+            "mcp_get_package_docs",
+            package_name=package_name,
+            module_path=module_path,
+            version=version,
+        )
 
         result = await self.mcpydoc.get_module_documentation(
             package_name, module_path, version
@@ -227,40 +219,71 @@ class MCPServer:
                 "summary": result.package.summary,
                 "author": result.package.author,
                 "license": result.package.license,
-                "location": str(result.package.location) if result.package.location else None
+                "location": (
+                    str(result.package.location) if result.package.location else None
+                ),
             },
-            "documentation": {
-                "description": result.documentation.description if result.documentation else None,
-                "long_description": result.documentation.long_description if result.documentation else None,
-                "parameters": [
-                    {
-                        "name": param.arg_name,
-                        "type": param.type_name,
-                        "description": param.description,
-                        "default": param.default,
-                        "optional": param.optional
-                    }
-                    for param in (result.documentation.params if result.documentation else [])
-                ],
-                "returns": {
-                    "type": result.documentation.returns.type_name if result.documentation and result.documentation.returns else None,
-                    "description": result.documentation.returns.description if result.documentation and result.documentation.returns else None
-                } if result.documentation and result.documentation.returns else None,
-                "raises": [
-                    {
-                        "exception": exc.type_name,
-                        "description": exc.description
-                    }
-                    for exc in (result.documentation.raises if result.documentation else [])
-                ]
-            } if result.documentation else None,
-            "symbol": {
-                "name": result.symbol.symbol.name,
-                "kind": result.symbol.symbol.kind,
-                "module": result.symbol.symbol.module,
-                "signature": result.symbol.symbol.signature,
-                "type_hints": result.symbol.type_hints
-            } if result.symbol else None
+            "documentation": (
+                {
+                    "description": (
+                        result.documentation.description
+                        if result.documentation
+                        else None
+                    ),
+                    "long_description": (
+                        result.documentation.long_description
+                        if result.documentation
+                        else None
+                    ),
+                    "parameters": [
+                        {
+                            "name": param.arg_name,
+                            "type": param.type_name,
+                            "description": param.description,
+                            "default": param.default,
+                            "optional": param.optional,
+                        }
+                        for param in (
+                            result.documentation.params if result.documentation else []
+                        )
+                    ],
+                    "returns": (
+                        {
+                            "type": (
+                                result.documentation.returns.type_name
+                                if result.documentation and result.documentation.returns
+                                else None
+                            ),
+                            "description": (
+                                result.documentation.returns.description
+                                if result.documentation and result.documentation.returns
+                                else None
+                            ),
+                        }
+                        if result.documentation and result.documentation.returns
+                        else None
+                    ),
+                    "raises": [
+                        {"exception": exc.type_name, "description": exc.description}
+                        for exc in (
+                            result.documentation.raises if result.documentation else []
+                        )
+                    ],
+                }
+                if result.documentation
+                else None
+            ),
+            "symbol": (
+                {
+                    "name": result.symbol.symbol.name,
+                    "kind": result.symbol.symbol.kind,
+                    "module": result.symbol.symbol.module,
+                    "signature": result.symbol.symbol.signature,
+                    "type_hints": result.symbol.type_hints,
+                }
+                if result.symbol
+                else None
+            ),
         }
 
     async def _search_symbols(self, args: Dict[str, Any]) -> Dict[str, Any]:
@@ -271,15 +294,20 @@ class MCPServer:
 
         if not package_name:
             raise ValueError("package_name is required")
-        
+
         # Validate inputs
         validate_package_name(package_name)
         if pattern and len(pattern) > 100:
             raise ValidationError(f"Search pattern too long: {len(pattern)} > 100")
         validate_version(version)
-        
+
         # Audit log the operation
-        audit_log("mcp_search_symbols", package_name=package_name, pattern=pattern, version=version)
+        audit_log(
+            "mcp_search_symbols",
+            package_name=package_name,
+            pattern=pattern,
+            version=version,
+        )
 
         results = await self.mcpydoc.search_package_symbols(
             package_name, pattern, version
@@ -289,7 +317,7 @@ class MCPServer:
             "query": {
                 "package": package_name,
                 "pattern": pattern,
-                "total_results": len(results)
+                "total_results": len(results),
             },
             "symbols": [
                 {
@@ -298,14 +326,26 @@ class MCPServer:
                     "kind": result.symbol.kind,
                     "module": result.symbol.module,
                     "signature": result.symbol.signature,
-                    "documentation": {
-                        "description": result.documentation.description if result.documentation else None,
-                        "long_description": result.documentation.long_description if result.documentation else None
-                    } if result.documentation else None,
-                    "type_hints": result.type_hints
+                    "documentation": (
+                        {
+                            "description": (
+                                result.documentation.description
+                                if result.documentation
+                                else None
+                            ),
+                            "long_description": (
+                                result.documentation.long_description
+                                if result.documentation
+                                else None
+                            ),
+                        }
+                        if result.documentation
+                        else None
+                    ),
+                    "type_hints": result.type_hints,
                 }
                 for result in results[:50]  # Limit results for performance
-            ]
+            ],
         }
 
     async def _get_source_code(self, args: Dict[str, Any]) -> Dict[str, Any]:
@@ -316,14 +356,19 @@ class MCPServer:
 
         if not package_name or not symbol_name:
             raise ValueError("package_name and symbol_name are required")
-        
+
         # Validate inputs
         validate_package_name(package_name)
         validate_symbol_path(symbol_name)
         validate_version(version)
-        
+
         # Audit log the operation
-        audit_log("mcp_get_source_code", package_name=package_name, symbol_name=symbol_name, version=version)
+        audit_log(
+            "mcp_get_source_code",
+            package_name=package_name,
+            symbol_name=symbol_name,
+            version=version,
+        )
 
         result = await self.mcpydoc.get_source_code(package_name, symbol_name, version)
 
@@ -331,28 +376,54 @@ class MCPServer:
             "symbol": {
                 "name": result.name,
                 "kind": result.kind,
-                "source_lines": len(result.source.split('\n')) if result.source else 0
+                "source_lines": len(result.source.split("\n")) if result.source else 0,
             },
             "source_code": result.source,
-            "documentation": {
-                "description": result.documentation.description if result.documentation else None,
-                "long_description": result.documentation.long_description if result.documentation else None,
-                "parameters": [
-                    {
-                        "name": param.arg_name,
-                        "type": param.type_name,
-                        "description": param.description,
-                        "default": param.default,
-                        "optional": param.optional
-                    }
-                    for param in (result.documentation.params if result.documentation else [])
-                ],
-                "returns": {
-                    "type": result.documentation.returns.type_name if result.documentation and result.documentation.returns else None,
-                    "description": result.documentation.returns.description if result.documentation and result.documentation.returns else None
-                } if result.documentation and result.documentation.returns else None
-            } if result.documentation else None,
-            "type_hints": result.type_hints
+            "documentation": (
+                {
+                    "description": (
+                        result.documentation.description
+                        if result.documentation
+                        else None
+                    ),
+                    "long_description": (
+                        result.documentation.long_description
+                        if result.documentation
+                        else None
+                    ),
+                    "parameters": [
+                        {
+                            "name": param.arg_name,
+                            "type": param.type_name,
+                            "description": param.description,
+                            "default": param.default,
+                            "optional": param.optional,
+                        }
+                        for param in (
+                            result.documentation.params if result.documentation else []
+                        )
+                    ],
+                    "returns": (
+                        {
+                            "type": (
+                                result.documentation.returns.type_name
+                                if result.documentation and result.documentation.returns
+                                else None
+                            ),
+                            "description": (
+                                result.documentation.returns.description
+                                if result.documentation and result.documentation.returns
+                                else None
+                            ),
+                        }
+                        if result.documentation and result.documentation.returns
+                        else None
+                    ),
+                }
+                if result.documentation
+                else None
+            ),
+            "type_hints": result.type_hints,
         }
 
     async def _analyze_structure(self, args: Dict[str, Any]) -> Dict[str, Any]:
@@ -362,11 +433,11 @@ class MCPServer:
 
         if not package_name:
             raise ValueError("package_name is required")
-        
+
         # Validate inputs
         validate_package_name(package_name)
         validate_version(version)
-        
+
         # Audit log the operation
         audit_log("mcp_analyze_structure", package_name=package_name, version=version)
 
@@ -377,42 +448,65 @@ class MCPServer:
                 "name": result.package.name,
                 "version": result.package.version,
                 "summary": result.package.summary,
-                "location": str(result.package.location) if result.package.location else None
+                "location": (
+                    str(result.package.location) if result.package.location else None
+                ),
             },
-            "documentation": {
-                "description": result.documentation.description if result.documentation else None,
-                "long_description": result.documentation.long_description if result.documentation else None
-            } if result.documentation else None,
+            "documentation": (
+                {
+                    "description": (
+                        result.documentation.description
+                        if result.documentation
+                        else None
+                    ),
+                    "long_description": (
+                        result.documentation.long_description
+                        if result.documentation
+                        else None
+                    ),
+                }
+                if result.documentation
+                else None
+            ),
             "structure": {
-                "total_symbols": len(result.modules) + len(result.classes) + len(result.functions) + len(result.other),
+                "total_symbols": len(result.modules)
+                + len(result.classes)
+                + len(result.functions)
+                + len(result.other),
                 "modules": len(result.modules),
                 "classes": len(result.classes),
                 "functions": len(result.functions),
-                "other": len(result.other)
+                "other": len(result.other),
             },
             "modules": [
                 {
                     "name": mod.symbol.name,
-                    "documentation": mod.documentation.description if mod.documentation else None
+                    "documentation": (
+                        mod.documentation.description if mod.documentation else None
+                    ),
                 }
                 for mod in result.modules[:10]  # Limit for readability
             ],
             "classes": [
                 {
                     "name": cls.symbol.name,
-                    "documentation": cls.documentation.description if cls.documentation else None,
-                    "signature": cls.symbol.signature
+                    "documentation": (
+                        cls.documentation.description if cls.documentation else None
+                    ),
+                    "signature": cls.symbol.signature,
                 }
                 for cls in result.classes[:10]  # Limit for readability
             ],
             "functions": [
                 {
                     "name": func.symbol.name,
-                    "documentation": func.documentation.description if func.documentation else None,
-                    "signature": func.symbol.signature
+                    "documentation": (
+                        func.documentation.description if func.documentation else None
+                    ),
+                    "signature": func.symbol.signature,
                 }
                 for func in result.functions[:10]  # Limit for readability
-            ]
+            ],
         }
 
     async def handle_request(self, request_data: str) -> str:
@@ -448,24 +542,26 @@ class MCPServer:
     async def run_stdio(self):
         """Run MCP server using stdio transport."""
         self.logger.info("Starting MCPyDoc MCP server on stdio")
-        
+
         while True:
             try:
                 # Read request from stdin
-                line = await asyncio.get_event_loop().run_in_executor(None, sys.stdin.readline)
+                line = await asyncio.get_event_loop().run_in_executor(
+                    None, sys.stdin.readline
+                )
                 if not line:
                     break
-                
+
                 line = line.strip()
                 if not line:
                     continue
 
                 # Handle request
                 response = await self.handle_request(line)
-                
+
                 # Send response to stdout
                 print(response, flush=True)
-                
+
             except KeyboardInterrupt:
                 break
             except Exception as e:

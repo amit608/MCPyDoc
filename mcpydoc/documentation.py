@@ -7,6 +7,7 @@ from docstring_parser.common import ParseError
 
 from .models import DocumentationInfo
 
+
 class DocumentationParser:
     """Parses and formats Python docstrings."""
 
@@ -51,10 +52,12 @@ class DocumentationParser:
 
         raises = []
         for raise_info in parsed.raises:
-            raises.append({
-                "type": raise_info.type_name,
-                "description": raise_info.description,
-            })
+            raises.append(
+                {
+                    "type": raise_info.type_name,
+                    "description": raise_info.description,
+                }
+            )
 
         # Extract examples and other sections
         examples = []
@@ -69,7 +72,9 @@ class DocumentationParser:
                     examples.append(content)
                 elif "note" in args_lower:
                     notes.append(content)
-                elif any(keyword in args_lower for keyword in ["see", "ref", "reference"]):
+                elif any(
+                    keyword in args_lower for keyword in ["see", "ref", "reference"]
+                ):
                     references.append(content)
 
         return DocumentationInfo(
@@ -91,18 +96,18 @@ class DocumentationParser:
 
         # First non-empty line is the description
         description = lines[0].strip()
-        
+
         # Look for additional content
         long_description_lines = []
         examples = []
         notes = []
-        
+
         current_section = None
         for line in lines[1:]:
             line = line.strip()
             if not line:
                 continue
-                
+
             line_lower = line.lower()
             if any(keyword in line_lower for keyword in ["example:", "examples:"]):
                 current_section = "examples"
@@ -115,7 +120,7 @@ class DocumentationParser:
                 if current_section != "examples":
                     examples.append(line)
                 continue
-                
+
             if current_section == "examples":
                 examples.append(line)
             elif current_section == "notes":
@@ -123,7 +128,9 @@ class DocumentationParser:
             else:
                 long_description_lines.append(line)
 
-        long_description = "\n".join(long_description_lines) if long_description_lines else None
+        long_description = (
+            "\n".join(long_description_lines) if long_description_lines else None
+        )
 
         return DocumentationInfo(
             description=description,

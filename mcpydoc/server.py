@@ -10,9 +10,10 @@ from .exceptions import (
 from .models import (
     ModuleDocumentationResult,
     PackageStructure,
-    SourceCodeResult, 
+    SourceCodeResult,
     SymbolSearchResult,
 )
+
 
 class MCPyDoc:
     """MCP server for Python package documentation."""
@@ -69,7 +70,7 @@ class MCPyDoc:
             # Return package-level documentation
             module = self.analyzer._import_module(package_name, version)
             documentation = self.doc_parser.parse_docstring(module.__doc__)
-            
+
             return ModuleDocumentationResult(
                 package=package_info,
                 documentation=documentation,
@@ -134,7 +135,7 @@ class MCPyDoc:
             SourceCodeUnavailableError: If source code is not available
         """
         symbol_info = self.analyzer.get_symbol_info(package_name, symbol_name)
-        
+
         if not symbol_info.source:
             raise SourceCodeUnavailableError(
                 symbol_name, "Source code not available for this symbol"

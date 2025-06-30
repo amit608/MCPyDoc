@@ -12,17 +12,17 @@ from .exceptions import (
     ImportError,
     PackageNotFoundError,
     SymbolNotFoundError,
-    VersionConflictError,
     ValidationError,
+    VersionConflictError,
 )
 from .models import PackageInfo, SymbolInfo
 from .security import (
-    validate_package_name,
-    validate_version,
-    validate_symbol_path,
-    timeout,
-    memory_limit,
     audit_log,
+    memory_limit,
+    timeout,
+    validate_package_name,
+    validate_symbol_path,
+    validate_version,
 )
 
 
@@ -62,7 +62,7 @@ class PackageAnalyzer:
         # Validate inputs
         validate_package_name(package_name)
         validate_version(version)
-        
+
         # Audit log the operation
         audit_log("get_package_info", package_name=package_name, version=version)
         # Check version cache first
@@ -82,7 +82,7 @@ class PackageAnalyzer:
         # First, check if it's a built-in or standard library module
         try:
             module = import_module(package_name)
-            
+
             # Check if it's a built-in module
             if package_name in sys.builtin_module_names:
                 pkg_info = PackageInfo(
@@ -96,15 +96,21 @@ class PackageAnalyzer:
                 versions[pkg_info.version] = pkg_info
                 found = True
             # Check if it's a standard library module
-            elif hasattr(module, '__file__') and module.__file__:
+            elif hasattr(module, "__file__") and module.__file__:
                 module_file = Path(module.__file__)
                 # Use base_prefix for standard library path (handles virtual envs)
-                base_prefix = getattr(sys, 'base_prefix', sys.prefix)
-                if sys.platform == 'win32':
-                    stdlib_path = Path(base_prefix) / 'Lib'
+                base_prefix = getattr(sys, "base_prefix", sys.prefix)
+                if sys.platform == "win32":
+                    stdlib_path = Path(base_prefix) / "Lib"
                 else:
-                    stdlib_path = Path(base_prefix) / 'lib' / 'python{}.{}'.format(sys.version_info.major, sys.version_info.minor)
-                
+                    stdlib_path = (
+                        Path(base_prefix)
+                        / "lib"
+                        / "python{}.{}".format(
+                            sys.version_info.major, sys.version_info.minor
+                        )
+                    )
+
                 if str(module_file).startswith(str(stdlib_path)):
                     pkg_info = PackageInfo(
                         name=package_name,
@@ -179,27 +185,36 @@ class PackageAnalyzer:
         # Try to import directly first (for built-in modules)
         try:
             module = import_module(module_path)
-            
+
             # Check if this is a built-in module or standard library
-            if hasattr(module, '__file__') and module.__file__:
+            if hasattr(module, "__file__") and module.__file__:
                 # It's a file-based module, check if it's in standard library
                 module_file = Path(module.__file__)
                 # Use base_prefix for standard library path (handles virtual envs)
-                base_prefix = getattr(sys, 'base_prefix', sys.prefix)
-                if sys.platform == 'win32':
-                    stdlib_path = Path(base_prefix) / 'Lib'
+                base_prefix = getattr(sys, "base_prefix", sys.prefix)
+                if sys.platform == "win32":
+                    stdlib_path = Path(base_prefix) / "Lib"
                 else:
-                    stdlib_path = Path(base_prefix) / 'lib' / 'python{}.{}'.format(sys.version_info.major, sys.version_info.minor)
-                
+                    stdlib_path = (
+                        Path(base_prefix)
+                        / "lib"
+                        / "python{}.{}".format(
+                            sys.version_info.major, sys.version_info.minor
+                        )
+                    )
+
                 # If it's in standard library or built-in, no need for package info
-                if str(module_file).startswith(str(stdlib_path)) or module_path in sys.builtin_module_names:
+                if (
+                    str(module_file).startswith(str(stdlib_path))
+                    or module_path in sys.builtin_module_names
+                ):
                     self._package_cache[cache_key] = module
                     return module
             elif module_path in sys.builtin_module_names:
                 # It's a built-in module
                 self._package_cache[cache_key] = module
                 return module
-            
+
             # If we get here, it might be a third-party package
             # Get package name from module path
             package_name = module_path.split(".")[0]
@@ -241,7 +256,7 @@ class PackageAnalyzer:
         # Validate inputs
         validate_package_name(package_name)
         validate_symbol_path(symbol_path)
-        
+
         # Audit log the operation
         audit_log("get_symbol_info", package_name=package_name, symbol_path=symbol_path)
         # Handle both package-level and module-level symbols
@@ -339,7 +354,7 @@ class PackageAnalyzer:
         if pattern is not None:
             if len(pattern) > 100:  # Limit pattern length
                 raise ValidationError(f"Search pattern too long: {len(pattern)} > 100")
-        
+
         # Audit log the operation
         audit_log("search_symbols", package_name=package_name, pattern=pattern)
         results = []
@@ -380,9 +395,7 @@ class PackageAnalyzer:
                     and obj.__name__.startswith(package_name)
                     and len(results) < 1000  # Prevent infinite recursion
                 ):
-                    _scan_module(
-                        obj, prefix=f"{full_name}." if prefix else f"{name}."
-                    )
+                    _scan_module(obj, prefix=f"{full_name}." if prefix else f"{name}.")
 
         _scan_module(package)
         return results

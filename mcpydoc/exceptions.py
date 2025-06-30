@@ -5,12 +5,12 @@ from typing import Optional
 
 class MCPyDocError(Exception):
     """Base exception for all MCPyDoc errors."""
-    
+
     def __init__(self, message: str, details: Optional[str] = None) -> None:
         self.message = message
         self.details = details
         super().__init__(message)
-    
+
     def __str__(self) -> str:
         if self.details:
             return f"{self.message}: {self.details}"
@@ -19,8 +19,10 @@ class MCPyDocError(Exception):
 
 class PackageNotFoundError(MCPyDocError):
     """Raised when a package cannot be found."""
-    
-    def __init__(self, package_name: str, searched_paths: Optional[list] = None) -> None:
+
+    def __init__(
+        self, package_name: str, searched_paths: Optional[list] = None
+    ) -> None:
         message = f"Package '{package_name}' not found"
         details = None
         if searched_paths:
@@ -32,7 +34,7 @@ class PackageNotFoundError(MCPyDocError):
 
 class VersionConflictError(MCPyDocError):
     """Raised when there's a version conflict."""
-    
+
     def __init__(self, package_name: str, requested: str, found: str) -> None:
         message = f"Version conflict for package '{package_name}'"
         details = f"Requested: {requested}, Found: {found}"
@@ -44,7 +46,7 @@ class VersionConflictError(MCPyDocError):
 
 class ImportError(MCPyDocError):
     """Raised when a module cannot be imported."""
-    
+
     def __init__(self, module_path: str, original_error: Exception) -> None:
         message = f"Could not import module '{module_path}'"
         details = str(original_error)
@@ -55,7 +57,7 @@ class ImportError(MCPyDocError):
 
 class SymbolNotFoundError(MCPyDocError):
     """Raised when a symbol cannot be found in a module."""
-    
+
     def __init__(self, symbol_path: str, module_path: str) -> None:
         message = f"Symbol '{symbol_path}' not found in module '{module_path}'"
         super().__init__(message)
@@ -65,24 +67,32 @@ class SymbolNotFoundError(MCPyDocError):
 
 class SourceCodeUnavailableError(MCPyDocError):
     """Raised when source code is not available for a symbol."""
-    
+
     def __init__(self, symbol_name: str, reason: Optional[str] = None) -> None:
         message = f"Source code not available for '{symbol_name}'"
         super().__init__(message, reason)
         self.symbol_name = symbol_name
 
+
 class SecurityError(MCPyDocError):
     """Base class for security-related errors."""
+
     pass
+
 
 class ValidationError(SecurityError):
     """Raised when input validation fails."""
+
     pass
+
 
 class ResourceLimitError(SecurityError):
     """Raised when resource limits are exceeded."""
+
     pass
+
 
 class PackageSecurityError(SecurityError):
     """Raised when package security checks fail."""
+
     pass
