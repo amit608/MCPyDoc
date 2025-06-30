@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.3] - 2025-06-30
+
+### Fixed
+- 🔧 **Windows Compatibility**: Fixed wheel installation command in publish workflow to work across all platforms
+- 📦 **Package Installation**: Replaced problematic wildcard `dist/*.whl` with `--find-links` approach
+
+### Infrastructure
+- Cross-platform wheel installation compatibility
+- Improved publish workflow reliability
+
 ## [0.1.2] - 2025-06-30
 
 ### Fixed
@@ -98,7 +108,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Contributing guidelines
 - Security implementation documentation
 
-[Unreleased]: https://github.com/amit608/MCPyDoc/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/amit608/MCPyDoc/compare/v0.1.3...HEAD
+[0.1.3]: https://github.com/amit608/MCPyDoc/releases/tag/v0.1.3
 [0.1.2]: https://github.com/amit608/MCPyDoc/releases/tag/v0.1.2
 [0.1.1]: https://github.com/amit608/MCPyDoc/releases/tag/v0.1.1
 [0.1.0]: https://github.com/amit608/MCPyDoc/releases/tag/v0.1.0

@@ -63,7 +63,7 @@ jobs:
 
     - name: Test installation from wheel
       run: |
-        pip install dist/*.whl
+        python -m pip install --find-links dist mcpydoc
         python -c "import mcpydoc; print(f'MCPyDoc {mcpydoc.__version__} installed successfully')"
 
   publish-test:

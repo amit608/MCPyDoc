@@ -21,7 +21,7 @@ from .models import (
 )
 from .server import MCPyDoc
 
-__version__ = "0.1.2"
+__version__ = "0.1.3"
 
 __all__ = [
     # Main server class
