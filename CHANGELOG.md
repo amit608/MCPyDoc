@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.2] - 2025-06-30
+
+### Fixed
+- ✅ **CI Pipeline Issues**: Updated GitHub Actions to use artifact v4 (removed deprecated v3)
+- 🔧 **Code Formatting**: Applied Black formatting to all Python files for CI compliance
+- 📋 **Workflow Compatibility**: Fixed deprecated action versions across all workflows
+
+### Infrastructure
+- Updated all `actions/upload-artifact` and `actions/download-artifact` to v4
+- Ensured CI pipeline passes all code quality checks
+- Maintained backward compatibility with existing functionality
+
 ## [0.1.1] - 2025-06-30
 
 ### Added
@@ -84,6 +96,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Contributing guidelines
 - Security implementation documentation
 
-[Unreleased]: https://github.com/amit608/MCPyDoc/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/amit608/MCPyDoc/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/amit608/MCPyDoc/releases/tag/v0.1.2
 [0.1.1]: https://github.com/amit608/MCPyDoc/releases/tag/v0.1.1
 [0.1.0]: https://github.com/amit608/MCPyDoc/releases/tag/v0.1.0
