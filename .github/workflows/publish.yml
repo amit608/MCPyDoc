@@ -62,8 +62,17 @@ jobs:
         path: dist/
 
     - name: Test installation from wheel
+      shell: bash
       run: |
-        python -m pip install --find-links dist mcpydoc
+        # Find and install the wheel file
+        WHEEL_FILE=$(find dist -name "*.whl" | head -1)
+        if [ -z "$WHEEL_FILE" ]; then
+          echo "No wheel file found in dist/"
+          ls -la dist/
+          exit 1
+        fi
+        echo "Installing wheel: $WHEEL_FILE"
+        python -m pip install "$WHEEL_FILE"
         python -c "import mcpydoc; print(f'MCPyDoc {mcpydoc.__version__} installed successfully')"
 
   publish-test:
