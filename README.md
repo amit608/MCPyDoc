@@ -175,49 +175,6 @@ mcpydoc/
 - **Models**: Type-safe data structures with Pydantic
 - **Exception Handling**: Comprehensive error management
 
-## 📈 Performance
-
-- **Package Info**: < 100ms (cached after first request)
-- **Symbol Search**: < 200ms for most packages
-- **Source Retrieval**: < 150ms
-- **Structure Analysis**: < 500ms for typical packages
-- **Memory Usage**: < 100MB for normal operations
-
-
-## 🐛 Troubleshooting
-
-### Common Issues
-
-1. **"Package not found" errors**
-   - Ensure the package is installed: `pip install package_name`
-   - Check virtual environment activation
-
-2. **Import errors**
-   - Verify MCPyDoc installation: `pip install .`
-   - Check Python path configuration
-
-3. **Source code unavailable**
-   - Some built-in functions don't have accessible source
-   - This is expected behavior for C extensions
-
-### Debug Commands
-
-```bash
-# Check environment
-python -c "import sys; print(f'Python: {sys.version}'); print(f'Prefix: {sys.prefix}')"
-
-# Test basic functionality
-python -c "
-import asyncio
-from mcpydoc import MCPyDoc
-async def test():
-    mcpydoc = MCPyDoc()
-    result = await mcpydoc.get_module_documentation('json')
-    print(f'Success: {result.package.name}')
-asyncio.run(test())
-"
-```
-
 ## 📝 License
 
 MIT License - see [LICENSE](LICENSE) file for details.
