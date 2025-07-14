@@ -162,3 +162,17 @@ async def test_caching_behavior(server):
 
     # Verify cache is actually being used by checking internal state
     assert "pytest" in server.analyzer._version_cache
+
+
+@pytest.mark.asyncio
+async def test_server_get_package_docs():
+    """Ensure MCPServer._get_package_docs returns dicts with safe access."""
+    from mcpydoc.mcp_server import MCPServer
+
+    srv = MCPServer()
+    result = await srv._get_package_docs({"package_name": "pytest"})
+    assert result["package"]["name"] == "pytest"
+    if result.get("documentation") and result["documentation"]["parameters"]:
+        first_param = result["documentation"]["parameters"][0]
+        assert isinstance(first_param, dict)
+        assert "name" in first_param

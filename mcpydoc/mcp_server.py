@@ -237,11 +237,11 @@ class MCPServer:
                     ),
                     "parameters": [
                         {
-                            "name": param.arg_name,
-                            "type": param.type_name,
-                            "description": param.description,
-                            "default": param.default,
-                            "optional": param.optional,
+                            "name": param.get("name"),
+                            "type": param.get("type"),
+                            "description": param.get("description"),
+                            "default": param.get("default"),
+                            "optional": param.get("is_optional"),
                         }
                         for param in (
                             result.documentation.params if result.documentation else []
@@ -249,22 +249,19 @@ class MCPServer:
                     ],
                     "returns": (
                         {
-                            "type": (
-                                result.documentation.returns.type_name
-                                if result.documentation and result.documentation.returns
-                                else None
-                            ),
-                            "description": (
-                                result.documentation.returns.description
-                                if result.documentation and result.documentation.returns
-                                else None
+                            "type": result.documentation.returns.get("type"),
+                            "description": result.documentation.returns.get(
+                                "description"
                             ),
                         }
                         if result.documentation and result.documentation.returns
                         else None
                     ),
                     "raises": [
-                        {"exception": exc.type_name, "description": exc.description}
+                        {
+                            "exception": exc.get("type"),
+                            "description": exc.get("description"),
+                        }
                         for exc in (
                             result.documentation.raises if result.documentation else []
                         )
