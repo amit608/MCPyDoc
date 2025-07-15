@@ -12,6 +12,8 @@ import logging
 import sys
 from typing import Any, Dict, Optional, Union
 
+import mcpydoc
+
 from .exceptions import (
     ValidationError,
 )
@@ -62,7 +64,7 @@ class MCPServer:
         return {
             "protocolVersion": "2024-11-05",
             "capabilities": {"tools": {}, "resources": {}},
-            "serverInfo": {"name": "mcpydoc", "version": "0.1.0"},
+            "serverInfo": {"name": "mcpydoc", "version": mcpydoc.__version__},
         }
 
     async def _handle_tools_list(self, params: Dict[str, Any]) -> Dict[str, Any]:
