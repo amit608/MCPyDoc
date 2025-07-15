@@ -258,9 +258,8 @@ class TestPathValidation:
 
     def test_validate_file_path_invalid(self):
         """Test invalid file path."""
-        # Skip this test as empty string is actually valid for Path()
-        # Just test that the function handles edge cases gracefully
-        pass
+        with pytest.raises(ValidationError):
+            validate_file_path("invalid\0path")
 
 
 class TestSecurityIntegration:
