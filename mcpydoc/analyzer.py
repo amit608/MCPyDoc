@@ -111,7 +111,8 @@ class PackageAnalyzer:
                         )
                     )
 
-                if str(module_file).startswith(str(stdlib_path)):
+                in_site_packages = "site-packages" in module_file.parts
+                if str(module_file).startswith(str(stdlib_path)) and not in_site_packages:
                     pkg_info = PackageInfo(
                         name=package_name,
                         version=f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}",
@@ -400,7 +401,6 @@ class PackageAnalyzer:
         _scan_module(package)
         return results
 
-    @lru_cache(maxsize=128)
     def get_type_hints_safe(self, obj: any) -> Dict[str, str]:
         """Safely extract type hints from an object.
 

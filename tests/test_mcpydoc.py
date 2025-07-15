@@ -1,6 +1,7 @@
 """Tests for the MCPyDoc MCP server."""
 
 import pytest
+from importlib import metadata
 
 from mcpydoc import MCPyDoc, PackageInfo, SymbolInfo
 from mcpydoc.exceptions import PackageNotFoundError, SymbolNotFoundError
@@ -20,6 +21,14 @@ async def test_get_package_info(server):
     assert isinstance(info, PackageInfo)
     assert info.name == "pytest"
     assert info.version is not None
+
+
+@pytest.mark.asyncio
+async def test_get_package_info_version_matches_installed(server):
+    """Ensure retrieved version matches installed package version."""
+    info = server.analyzer.get_package_info("pytest")
+    installed_version = metadata.version("pytest")
+    assert info.version == installed_version
 
 
 @pytest.mark.asyncio
