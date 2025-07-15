@@ -1,7 +1,8 @@
 """Tests for the MCPyDoc MCP server."""
 
-import pytest
 from importlib import metadata
+
+import pytest
 
 from mcpydoc import MCPyDoc, PackageInfo, SymbolInfo
 from mcpydoc.exceptions import PackageNotFoundError, SymbolNotFoundError
