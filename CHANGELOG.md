@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2025-07-27
+
+### Added
+- 🎉 **Public Release**: MCPyDoc is now officially open source and public on GitHub
+- 📚 **Clean Git History**: Squashed all development commits into single professional commit
+- ✨ **Production Maturity**: Represents stable, production-ready codebase with comprehensive features
+
+### Changed
+- 🔄 **Repository Structure**: Clean git history for professional open-source presentation
+- 📝 **Version Bump**: Major version increment to mark public release milestone
+- 🌍 **Open Source**: Repository is now publicly available for community contributions
+
+### Infrastructure
+- Complete professional open-source project setup
+- Clean git history with single comprehensive commit
+- Ready for community contributions and public adoption
+
 ## [0.1.4] - 2025-06-30
 
 ### Fixed
