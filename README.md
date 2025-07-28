@@ -6,7 +6,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
-MCPyDoc is a Model Context Protocol (MCP) server that provides comprehensive documentation and code analysis capabilities for Python packages. It enables AI agents like Cline and GitHub Copilot to understand and work with Python codebases more effectively.
+MCPyDoc is a Model Context Protocol (MCP) server that provides comprehensive documentation and code analysis capabilities for Python packages. It enables AI agents like Cline and GitHub Copilot to understand and work with Python codebases more effectively, especially when working with private libraries and unfamiliar packages.
 
 ## ✨ Features
 
@@ -53,52 +53,6 @@ Add MCPyDoc to your Cline/Claude Code/Cursor/Github Copilot MCP configuration:
   }
 }
 ```
-
-### Recommended Rules
-
-To help the coding AI agent use MCPyDoc effectively, add these rules to your rules file (Cline: `.clinerules`, Cursor: `.cursor/rules/`, Github Copilot:`copilot-instructions.md`, Claude Code: `.claude/settings.json`):
-
-```markdown
-# Python Package Analysis Guidelines
-
-## When to Use MCPyDoc Tools
-
-### Always use MCPyDoc when:
-- User asks about Python package functionality or capabilities
-- Need to understand how to use a specific Python library
-- Looking for specific functions or classes in a package
-- Want to see source code implementation details
-- Need to understand package structure or available modules
-- Troubleshooting Python package usage issues
-
-### Recommended workflow:
-1. **Start with `analyze_structure`** to understand package organization
-2. **Use `search_symbols`** to find relevant functions/classes
-3. **Use `get_package_docs`** for comprehensive documentation of packages/modules
-4. **Use `get_package_docs` with `module_path`** for specific method/class documentation
-5. **Use `get_source_code`** when you need to see implementation details
-
-### For specific method documentation:
-- **Option 1**: `get_package_docs` with `module_path` parameter (e.g., `package="requests", module_path="Session.get"`)
-- **Option 2**: `search_symbols` to find the method, then `get_package_docs` for details
-- **Option 3**: `get_source_code` for the method implementation and its docstring
-
-### Examples of when to use MCPyDoc:
-- "I need to understand how to use the SQLAlchemy Session.query() method - show me its documentation and parameters"
-- "How do I use requests to make HTTP calls?"
-- "What classes are available in the pathlib module?"
-- "Show me the source code for json.loads"
-- "What functions does the os module provide for file operations?"
-- "How do I use pandas for data analysis?"
-
-### Don't use MCPyDoc for:
-- Questions about Python language syntax
-- General programming concepts
-- Non-Python packages or libraries
-- Questions already answered in previous context
-```
-
-Place this in your `.clinerules` file to help Cline automatically use MCPyDoc when working with Python packages.
 
 ## 📊 Supported Package Types
 

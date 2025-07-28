@@ -7,17 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2025-07-28
+
+### Added
+- 🚀 **Enhanced Tool Descriptions**: Revolutionary user experience with intelligent, self-guiding tool descriptions
+  - **Anti-hallucination focus**: Tools explicitly target private/unfamiliar package scenarios
+  - **Built-in workflow guidance**: Each tool suggests logical next steps and usage patterns
+  - **Context-rich descriptions**: Detailed explanations of when and how to use each tool
+  - **Smart parameter guidance**: Enhanced parameter descriptions with practical examples
+- 🎯 **Zero-Config Experience**: No manual rules configuration required for effective usage
+- 📖 **Problem-Focused Design**: Tools explicitly address AI hallucination with private packages
+
+### Changed
+- 🔄 **Tool Descriptions**: Completely rewritten with intelligence and context
+- 📝 **README Documentation**: Updated to highlight smart tool descriptions as primary feature
+- 🌟 **User Experience**: Manual rules now optional, positioned for advanced users only
+- 💡 **Parameter Descriptions**: Enhanced with practical examples and usage context
+
+### Infrastructure
+- Best-in-class MCP tool description implementation
+- Intelligent workflow guidance built into protocol
+- Market-leading zero-configuration user experience
+
 ## [0.2.0] - 2025-07-27
 
 ### Added
-- 🎉 **Public Release**: MCPyDoc is now officially open source and public on GitHub
+- 🎉 **Public Release**: MCPyDoc officially open source and public on GitHub
 - 📚 **Clean Git History**: Squashed all development commits into single professional commit
-- ✨ **Production Maturity**: Represents stable, production-ready codebase with comprehensive features
+- ✨ **Production Maturity**: Stable, production-ready codebase with comprehensive features
 
 ### Changed
 - 🔄 **Repository Structure**: Clean git history for professional open-source presentation
 - 📝 **Version Bump**: Major version increment to mark public release milestone
-- 🌍 **Open Source**: Repository is now publicly available for community contributions
+- 🌍 **Open Source**: Repository publicly available for community contributions
 
 ### Infrastructure
 - Complete professional open-source project setup

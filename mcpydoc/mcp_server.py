@@ -73,21 +73,21 @@ class MCPServer:
             "tools": [
                 {
                     "name": "get_package_docs",
-                    "description": "Get comprehensive documentation for a Python package or module",
+                    "description": "Get real-time comprehensive documentation for Python packages to prevent API hallucination. Essential when working with private libraries, unfamiliar packages, or when you need accurate method signatures instead of guessing. Use this to get actual documentation from the current environment rather than relying on potentially outdated training data. Perfect for understanding package capabilities, method parameters, return types, and usage examples. Use with module_path parameter to get specific class/method documentation (e.g., package='requests', module_path='Session.get').",
                     "inputSchema": {
                         "type": "object",
                         "properties": {
                             "package_name": {
                                 "type": "string",
-                                "description": "Name of the Python package to analyze",
+                                "description": "Name of the Python package to analyze (especially useful for private or unfamiliar packages)",
                             },
                             "module_path": {
                                 "type": "string",
-                                "description": "Optional dot-separated path to specific module/class within the package",
+                                "description": "Optional dot-separated path to specific module/class/method within the package (e.g., 'Session.get', 'utils.helper_function')",
                             },
                             "version": {
                                 "type": "string",
-                                "description": "Optional specific version to use",
+                                "description": "Optional specific version to use (ensures version-accurate documentation)",
                             },
                         },
                         "required": ["package_name"],
@@ -95,21 +95,21 @@ class MCPServer:
                 },
                 {
                     "name": "search_symbols",
-                    "description": "Search for classes, functions, and modules in a Python package",
+                    "description": "Discover available classes, functions, and modules in private or unfamiliar Python packages to prevent API guessing and hallucination. Use this when you need to explore what functionality actually exists in a package that may not be in your training data. Essential for finding the right methods before writing code, discovering package capabilities, or when users ask about available functionality in third-party or private libraries. Returns actual symbol names and signatures from the current environment. Follow up with get_package_docs for detailed documentation of interesting symbols.",
                     "inputSchema": {
                         "type": "object",
                         "properties": {
                             "package_name": {
                                 "type": "string",
-                                "description": "Name of the Python package to search",
+                                "description": "Name of the Python package to search (particularly valuable for private or unfamiliar packages)",
                             },
                             "pattern": {
                                 "type": "string",
-                                "description": "Search pattern to filter symbols (case-insensitive substring match)",
+                                "description": "Search pattern to filter symbols by name (case-insensitive substring match, e.g., 'auth', 'config', 'util')",
                             },
                             "version": {
                                 "type": "string",
-                                "description": "Optional specific version to use",
+                                "description": "Optional specific version to ensure accurate symbol discovery",
                             },
                         },
                         "required": ["package_name"],
@@ -117,21 +117,21 @@ class MCPServer:
                 },
                 {
                     "name": "get_source_code",
-                    "description": "Get the actual source code for a Python function or class",
+                    "description": "Retrieve actual implementation source code for Python functions or classes to understand exact behavior and avoid implementation guessing. Critical when working with private libraries or unfamiliar packages where you need to see the real implementation details, understand complex logic, or verify expected behavior. Use this when documentation alone isn't sufficient and you need to see how something actually works. Provides the definitive answer to 'how does this function/class actually work?' Perfect for debugging, understanding edge cases, or when adapting code to work with specific implementations.",
                     "inputSchema": {
                         "type": "object",
                         "properties": {
                             "package_name": {
                                 "type": "string",
-                                "description": "Name of the Python package containing the symbol",
+                                "description": "Name of the Python package containing the symbol (especially valuable for private or complex libraries)",
                             },
                             "symbol_name": {
                                 "type": "string",
-                                "description": "Dot-separated path to the symbol (e.g., 'loads' or 'encoder.JSONEncoder')",
+                                "description": "Dot-separated path to the specific function/class/method (e.g., 'MyClass.method_name', 'utility_function')",
                             },
                             "version": {
                                 "type": "string",
-                                "description": "Optional specific version to use",
+                                "description": "Optional specific version to ensure source code accuracy",
                             },
                         },
                         "required": ["package_name", "symbol_name"],
@@ -139,17 +139,17 @@ class MCPServer:
                 },
                 {
                     "name": "analyze_structure",
-                    "description": "Analyze the complete structure of a Python package",
+                    "description": "Get a comprehensive overview of a Python package's complete structure and organization to understand its architecture before diving into specific components. This is the ideal starting point when encountering unfamiliar or private packages - use this FIRST to understand the package layout, available modules, main classes, and key functions. Prevents wasted time exploring incorrect paths and provides the foundation for making informed decisions about which specific tools to use next. Essential for understanding large, complex, or poorly documented packages. Follow up with search_symbols for targeted exploration or get_package_docs for specific components.",
                     "inputSchema": {
                         "type": "object",
                         "properties": {
                             "package_name": {
                                 "type": "string",
-                                "description": "Name of the Python package to analyze",
+                                "description": "Name of the Python package to analyze structure (start here for unfamiliar packages)",
                             },
                             "version": {
                                 "type": "string",
-                                "description": "Optional specific version to use",
+                                "description": "Optional specific version to ensure accurate structure analysis",
                             },
                         },
                         "required": ["package_name"],
