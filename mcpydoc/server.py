@@ -62,18 +62,58 @@ class MCPyDoc:
                 type_hints=type_hints,
             )
 
+            # Generate suggested next steps
+            suggested_next_steps = []
+            if symbol_info.kind == "class":
+                suggested_next_steps.extend(
+                    [
+                        f"Use search_symbols with pattern='method_name' to find methods in {symbol_info.name}",
+                        f"Use get_source_code with symbol_name='{module_path}' to see the full implementation",
+                    ]
+                )
+            elif symbol_info.kind == "method":
+                suggested_next_steps.extend(
+                    [
+                        f"Use get_source_code with symbol_name='{module_path}' to see the method implementation",
+                        f"Check the parent class documentation for context",
+                    ]
+                )
+
+            # Generate alternative paths for common mistakes
+            alternative_paths = []
+            if "." not in module_path:
+                # Try common submodule patterns
+                alternative_paths.extend(
+                    [
+                        f"calculator.{module_path}",
+                        f"core.{module_path}",
+                        f"main.{module_path}",
+                    ]
+                )
+
             return ModuleDocumentationResult(
                 package=package_info,
                 symbol=symbol_result,
+                suggested_next_steps=suggested_next_steps,
+                alternative_paths=alternative_paths,
             )
         else:
             # Return package-level documentation
             module = self.analyzer._import_module(package_name, version)
             documentation = self.doc_parser.parse_docstring(module.__doc__)
 
+            # Suggest starting points for package exploration
+            suggested_next_steps = [
+                f"Use analyze_structure to see the full package organization",
+                f"Use search_symbols to find specific classes or functions",
+                f"Look for main classes or entry points in the package",
+            ]
+
             return ModuleDocumentationResult(
                 package=package_info,
                 documentation=documentation,
+                suggested_next_steps=suggested_next_steps,
+                alternative_paths=[],
             )
 
     async def search_package_symbols(
@@ -96,20 +136,40 @@ class MCPyDoc:
             PackageNotFoundError: If package not found
             ImportError: If package cannot be imported
         """
-        symbols = self.analyzer.search_symbols(package_name, search_pattern)
+        symbols = self.analyzer.search_symbols(package_name, search_pattern, version)
         results = []
 
         for symbol in symbols:
             documentation = self.doc_parser.parse_docstring(symbol.docstring)
             type_hints = self.analyzer.get_type_hints_safe(symbol)
 
+            # Determine parent class for methods
+            parent_class = None
+            if symbol.kind == "method" and "." in symbol.qualname:
+                parent_class = symbol.qualname.split(".")[-2]
+
             result = SymbolSearchResult(
                 symbol=symbol,
                 documentation=documentation,
                 type_hints=type_hints,
+                parent_class=parent_class,
             )
             results.append(result)
 
+        # Sort results with exact matches first, then partial matches
+        def sort_key(result):
+            if search_pattern:
+                name = result.symbol.name.lower()
+                pattern = search_pattern.lower()
+                if name == pattern:
+                    return 0  # Exact match - highest priority
+                elif pattern in name:
+                    return 1  # Partial match - medium priority
+                else:
+                    return 2  # Other matches - lowest priority
+            return 0  # No pattern, maintain original order
+
+        results.sort(key=sort_key)
         return results
 
     async def get_source_code(
@@ -202,6 +262,33 @@ class MCPyDoc:
         module = self.analyzer._import_module(package_name, version)
         package_documentation = self.doc_parser.parse_docstring(module.__doc__)
 
+        # Generate suggested next steps based on what was found
+        suggested_next_steps = []
+        if classes:
+            main_class = classes[0].symbol.name  # Most likely main class
+            suggested_next_steps.extend(
+                [
+                    f"Use get_package_docs with module_path='{main_class}' to explore the main class",
+                    f"Use search_symbols with pattern='method_name' to find specific methods",
+                    f"Use get_source_code to see implementations of interesting classes",
+                ]
+            )
+        elif functions:
+            main_function = functions[0].symbol.name
+            suggested_next_steps.extend(
+                [
+                    f"Use get_package_docs with module_path='{main_function}' to get function details",
+                    f"Use get_source_code to see function implementations",
+                ]
+            )
+        else:
+            suggested_next_steps.extend(
+                [
+                    f"Use search_symbols with a specific pattern to find symbols",
+                    f"Try exploring submodules if this package has them",
+                ]
+            )
+
         return PackageStructure(
             package=package_info,
             documentation=package_documentation,
@@ -209,4 +296,5 @@ class MCPyDoc:
             classes=classes,
             functions=functions,
             other=other,
+            suggested_next_steps=suggested_next_steps,
         )

@@ -337,13 +337,17 @@ class PackageAnalyzer:
     @timeout(45)
     @memory_limit(256)
     def search_symbols(
-        self, package_name: str, pattern: Optional[str] = None
+        self,
+        package_name: str,
+        pattern: Optional[str] = None,
+        version: Optional[str] = None,
     ) -> List[SymbolInfo]:
         """Search for symbols in a package matching an optional pattern.
 
         Args:
             package_name: Name of the package to search
             pattern: Optional pattern to filter symbols
+            version: Optional specific version to search
 
         Returns:
             List of SymbolInfo objects matching the criteria
@@ -360,9 +364,14 @@ class PackageAnalyzer:
                 raise ValidationError(f"Search pattern too long: {len(pattern)} > 100")
 
         # Audit log the operation
-        audit_log("search_symbols", package_name=package_name, pattern=pattern)
+        audit_log(
+            "search_symbols",
+            package_name=package_name,
+            pattern=pattern,
+            version=version,
+        )
         results = []
-        package = self._import_module(package_name)
+        package = self._import_module(package_name, version)
 
         def _scan_module(module: ModuleType, prefix: str = "") -> None:
             # Get all module contents, both direct and imported
@@ -392,6 +401,59 @@ class PackageAnalyzer:
                     results.append(info)
                 except (ImportError, SymbolNotFoundError, AttributeError):
                     continue
+
+                # Search for methods within classes
+                if inspect.isclass(obj):
+                    for method_name, method_obj in inspect.getmembers(
+                        obj, inspect.ismethod
+                    ):
+                        if method_name.startswith("_"):
+                            continue
+
+                        method_full_name = f"{full_name}.{method_name}"
+
+                        # Check pattern match for methods
+                        if pattern and pattern.lower() not in method_name.lower():
+                            continue
+
+                        try:
+                            method_info = SymbolInfo(
+                                name=method_name,
+                                qualname=f"{obj.__name__}.{method_name}",
+                                kind="method",
+                                module=getattr(obj, "__module__", package_name),
+                                docstring=getattr(method_obj, "__doc__", None),
+                                signature=self._get_signature(method_obj),
+                                source=self._get_source_code(method_obj),
+                            )
+                            results.append(method_info)
+                        except Exception:
+                            continue
+
+                    # Also search for functions within classes (static methods, class methods)
+                    for func_name, func_obj in inspect.getmembers(
+                        obj, inspect.isfunction
+                    ):
+                        if func_name.startswith("_"):
+                            continue
+
+                        # Check pattern match for functions
+                        if pattern and pattern.lower() not in func_name.lower():
+                            continue
+
+                        try:
+                            func_info = SymbolInfo(
+                                name=func_name,
+                                qualname=f"{obj.__name__}.{func_name}",
+                                kind="method",
+                                module=getattr(obj, "__module__", package_name),
+                                docstring=getattr(func_obj, "__doc__", None),
+                                signature=self._get_signature(func_obj),
+                                source=self._get_source_code(func_obj),
+                            )
+                            results.append(func_info)
+                        except Exception:
+                            continue
 
                 # Recursively scan submodules
                 if (

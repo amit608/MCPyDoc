@@ -182,6 +182,13 @@ def validate_file_path(file_path: Union[str, Path]) -> Path:
     Raises:
         ValidationError: If validation fails
     """
+    # Check for null bytes and other dangerous characters
+    file_path_str = str(file_path)
+    if "\0" in file_path_str:
+        raise ValidationError(
+            f"File path contains null bytes: {sanitize_string(file_path_str)}"
+        )
+
     try:
         path = Path(file_path).resolve()
     except (OSError, ValueError) as e:
