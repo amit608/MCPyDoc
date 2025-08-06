@@ -214,7 +214,7 @@ class MCPServer:
             package_name, module_path, version
         )
 
-        return {
+        response_data = {
             "package": {
                 "name": result.package.name,
                 "version": result.package.version,
@@ -279,11 +279,15 @@ class MCPServer:
                     "module": result.symbol.symbol.module,
                     "signature": result.symbol.symbol.signature,
                     "type_hints": result.symbol.type_hints,
+                    "parent_class": result.symbol.parent_class,
                 }
                 if result.symbol
                 else None
             ),
+            "suggested_next_steps": result.suggested_next_steps,
+            "alternative_paths": result.alternative_paths,
         }
+        return response_data
 
     async def _search_symbols(self, args: Dict[str, Any]) -> Dict[str, Any]:
         """Search for symbols in a package."""
@@ -342,8 +346,18 @@ class MCPServer:
                         else None
                     ),
                     "type_hints": result.type_hints,
+                    "parent_class": result.parent_class,
                 }
                 for result in results[:50]  # Limit results for performance
+            ],
+            "suggested_next_steps": [
+                f"Use get_package_docs with module_path='ClassName.method_name' for detailed method documentation",
+                f"Use get_source_code with symbol_name='ClassName.method_name' to see implementations",
+                f"Try different search patterns if you didn't find what you're looking for"
+            ] if results else [
+                f"Try analyze_structure to see the full package organization first",
+                f"Search with a broader pattern or no pattern to see all symbols",
+                f"Check if the package name is correct"
             ],
         }
 
@@ -506,6 +520,7 @@ class MCPServer:
                 }
                 for func in result.functions[:10]  # Limit for readability
             ],
+            "suggested_next_steps": result.suggested_next_steps,
         }
 
     async def handle_request(self, request_data: str) -> str:

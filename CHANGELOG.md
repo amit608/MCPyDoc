@@ -7,6 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2025-01-06
+
+### Added - Enhanced AI Agent Experience
+- **Smart Workflow Guidance**: All tool responses now include `suggested_next_steps` to guide AI agents through optimal workflows
+- **Enhanced Symbol Search**: Symbol search now finds methods within classes, not just top-level symbols
+- **Parent Class Detection**: Search results include parent class information for methods
+- **Confidence Scoring**: Symbol search results include confidence scores for better ranking
+- **Alternative Path Suggestions**: Error responses suggest alternative module paths for common mistakes
+- **Usage Examples**: Source code results include generated usage examples based on implementation
+
+### Enhanced - Better Error Handling
+- **Actionable Error Messages**: Enhanced error guidance with specific suggestions for AI agents
+- **Module Path Correction**: Automatic suggestions for common module path patterns
+- **Workflow Recovery**: When operations fail, responses suggest logical next steps to recover
+
+### Enhanced - Data Models
+- **Extended SymbolSearchResult**: Added `parent_class` and `confidence_score` fields
+- **Enhanced ModuleDocumentationResult**: Added `suggested_next_steps` and `alternative_paths` fields
+- **Improved PackageStructure**: Added workflow guidance for structure analysis
+- **Enhanced SourceCodeResult**: Added `usage_examples` field for better understanding
+
+### Enhanced - MCP Tool Responses
+- **Workflow Intelligence**: All MCP tools now provide intelligent next-step suggestions
+- **Context-Rich Results**: Enhanced response formats with more metadata and guidance
+- **Error Recovery**: Better error handling with actionable suggestions for AI agents
+
+### Technical Improvements
+- **Method Discovery**: Enhanced analyzer to recursively find methods within classes
+- **Smart Ranking**: Search results sorted by relevance and confidence
+- **Response Enrichment**: All responses include workflow guidance tailored for AI agents
+
+This release specifically addresses feedback from AI agent usage patterns to create a more intuitive and guided experience for automated code exploration and documentation discovery.
+
 ## [0.3.0] - 2025-07-28
 
 ### Added

@@ -1,6 +1,6 @@
 [project]
 name = "mcpydoc"
-version = "0.3.0"
+version = "0.4.0"
 description = "Model Context Protocol (MCP) server providing documentation and code analysis for Python packages"
 readme = "README.md"
 requires-python = ">=3.9"
