@@ -73,7 +73,7 @@ class MCPServer:
             "tools": [
                 {
                     "name": "get_package_docs",
-                    "description": "Get real-time comprehensive documentation for Python packages to prevent API hallucination. Essential when working with private libraries, unfamiliar packages, or when you need accurate method signatures instead of guessing. Use this to get actual documentation from the current environment rather than relying on potentially outdated training data. Perfect for understanding package capabilities, method parameters, return types, and usage examples. Use with module_path parameter to get specific class/method documentation (e.g., package='requests', module_path='Session.get').",
+                    "description": "Get real-time comprehensive documentation for Python packages to prevent API hallucination. Essential when working with private libraries, unfamiliar packages, or when you need accurate method signatures instead of guessing. Use this to get actual documentation from the current environment rather than relying on potentially outdated training data. Perfect for understanding package capabilities, method parameters, return types, and usage examples. Use with module_path parameter to get specific class/method documentation (e.g., package='requests', module_path='Session.get'). RECOMMENDED WORKFLOW: For unfamiliar packages, start with analyze_structure first to understand the package organization, then use this tool with the correct module paths.",
                     "inputSchema": {
                         "type": "object",
                         "properties": {
@@ -182,9 +182,46 @@ class MCPServer:
             }
 
         except Exception as e:
+            # Enhanced error handling with recovery suggestions
+            error_message = str(e)
+            enhanced_response = {"error": error_message, "recovery_suggestions": []}
+
+            # Provide context-aware recovery suggestions based on the tool and error
+            if tool_name == "get_package_docs" and "module" in error_message.lower():
+                enhanced_response["recovery_suggestions"] = [
+                    f"Try analyze_structure first to see the package organization",
+                    f"Use search_symbols to find the correct class/method names",
+                    f"Check if the module path should be just the class name (e.g., 'MagicCalculator')",
+                    f"Common patterns: 'ClassName', 'module.ClassName', or 'ClassName.method_name'",
+                ]
+            elif tool_name == "search_symbols" and "not found" in error_message.lower():
+                enhanced_response["recovery_suggestions"] = [
+                    f"Try analyze_structure to see all available symbols",
+                    f"Search with a broader pattern or no pattern to see all symbols",
+                    f"Check if the package name is correct",
+                ]
+            elif tool_name == "get_source_code" and (
+                "not found" in error_message.lower()
+                or "symbol" in error_message.lower()
+            ):
+                enhanced_response["recovery_suggestions"] = [
+                    f"Use analyze_structure to see available classes and methods",
+                    f"Try search_symbols to find the correct symbol name",
+                    f"Check the symbol path format (e.g., 'ClassName.method_name')",
+                ]
+            else:
+                # Generic recovery suggestions
+                enhanced_response["recovery_suggestions"] = [
+                    f"Try analyze_structure to understand the package organization",
+                    f"Use search_symbols to explore available functionality",
+                    f"Check the package name and ensure it's installed",
+                ]
+
             return {
                 "isError": True,
-                "content": [{"type": "text", "text": f"Error: {str(e)}"}],
+                "content": [
+                    {"type": "text", "text": json.dumps(enhanced_response, indent=2)}
+                ],
             }
 
     async def _get_package_docs(self, args: Dict[str, Any]) -> Dict[str, Any]:
