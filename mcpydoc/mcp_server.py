@@ -73,7 +73,7 @@ class MCPServer:
             "tools": [
                 {
                     "name": "get_package_docs",
-                    "description": "Get real-time comprehensive documentation for Python packages to prevent API hallucination. Essential when working with private libraries, unfamiliar packages, or when you need accurate method signatures instead of guessing. Use this to get actual documentation from the current environment rather than relying on potentially outdated training data. Perfect for understanding package capabilities, method parameters, return types, and usage examples. Use with module_path parameter to get specific class/method documentation (e.g., package='requests', module_path='Session.get'). RECOMMENDED WORKFLOW: For unfamiliar packages, start with analyze_structure first to understand the package organization, then use this tool with the correct module paths.",
+                    "description": "Get real-time comprehensive documentation for Python packages to prevent API hallucination. Essential when working with private libraries, unfamiliar packages, or when you need accurate method signatures instead of guessing. Use this to get actual documentation from the current environment rather than relying on potentially outdated training data. Perfect for understanding package capabilities, method parameters, return types, and usage examples. RECOMMENDED WORKFLOW: For unfamiliar packages, start with analyze_structure first to understand the package organization, then use this tool with the correct module paths.",
                     "inputSchema": {
                         "type": "object",
                         "properties": {
@@ -83,7 +83,7 @@ class MCPServer:
                             },
                             "module_path": {
                                 "type": "string",
-                                "description": "Optional dot-separated path to specific module/class/method within the package (e.g., 'Session.get', 'utils.helper_function')",
+                                "description": "Optional path to specific class or module within the package. IMPORTANT: Use 'ClassName' for class docs (e.g., 'MagicCalculator'), NOT 'ClassName.method' format. For method details, use get_source_code instead. Examples: 'Session', 'Calculator', 'utils.helper_class'",
                             },
                             "version": {
                                 "type": "string",
@@ -184,38 +184,91 @@ class MCPServer:
         except Exception as e:
             # Enhanced error handling with recovery suggestions
             error_message = str(e)
-            enhanced_response = {"error": error_message, "recovery_suggestions": []}
+            enhanced_response = {
+                "error": error_message,
+                "recovery_suggestions": [],
+                "common_fixes": [],
+            }
 
             # Provide context-aware recovery suggestions based on the tool and error
-            if tool_name == "get_package_docs" and "module" in error_message.lower():
-                enhanced_response["recovery_suggestions"] = [
-                    f"Try analyze_structure first to see the package organization",
-                    f"Use search_symbols to find the correct class/method names",
-                    f"Check if the module path should be just the class name (e.g., 'MagicCalculator')",
-                    f"Common patterns: 'ClassName', 'module.ClassName', or 'ClassName.method_name'",
-                ]
+            if tool_name == "get_package_docs":
+                if "module_path" in str(arguments):
+                    module_path = arguments.get("module_path", "")
+                    enhanced_response["recovery_suggestions"] = [
+                        f"Try analyze_structure first to see the package organization",
+                        f"Use search_symbols to find the correct class/method names",
+                        f"For class documentation, use module_path='ClassName'",
+                        f"For method documentation within a class context, this tool shows class info",
+                    ]
+                    if "." in module_path:
+                        enhanced_response["common_fixes"] = [
+                            f"Instead of '{module_path}', try just '{module_path.split('.')[0]}' for class info",
+                            f"Or use get_source_code with symbol_name='{module_path}' for method details",
+                            f"The module_path parameter is for modules/classes, not class.method paths",
+                        ]
+                else:
+                    enhanced_response["recovery_suggestions"] = [
+                        f"Try analyze_structure to see the package organization",
+                        f"Use search_symbols to find available classes and functions",
+                        f"Add module_path='ClassName' to get specific class documentation",
+                    ]
+
             elif tool_name == "search_symbols" and "not found" in error_message.lower():
                 enhanced_response["recovery_suggestions"] = [
                     f"Try analyze_structure to see all available symbols",
                     f"Search with a broader pattern or no pattern to see all symbols",
-                    f"Check if the package name is correct",
+                    f"Check if the package name is correct and installed",
                 ]
-            elif tool_name == "get_source_code" and (
-                "not found" in error_message.lower()
-                or "symbol" in error_message.lower()
-            ):
+
+            elif tool_name == "get_source_code":
+                if "symbol_name" in str(arguments):
+                    symbol_name = arguments.get("symbol_name", "")
+                    enhanced_response["recovery_suggestions"] = [
+                        f"Use analyze_structure to see available classes and methods",
+                        f"Try search_symbols to find the correct symbol name",
+                        f"For methods, use format 'ClassName.method_name'",
+                    ]
+                    if "." not in symbol_name:
+                        enhanced_response["common_fixes"] = [
+                            f"For class methods, use 'ClassName.method_name' format",
+                            f"For standalone functions, '{symbol_name}' should work if it exists",
+                            f"Check the exact symbol name with search_symbols first",
+                        ]
+                    else:
+                        parts = symbol_name.split(".")
+                        enhanced_response["common_fixes"] = [
+                            f"Verify '{parts[0]}' is the correct class name",
+                            f"Verify '{parts[1]}' is the correct method name",
+                            f"Check if symbol exists with search_symbols pattern='{parts[1]}'",
+                        ]
+                else:
+                    enhanced_response["recovery_suggestions"] = [
+                        f"Provide symbol_name parameter for the function/method to examine",
+                        f"Use search_symbols to find available symbols first",
+                    ]
+
+            elif tool_name == "analyze_structure":
                 enhanced_response["recovery_suggestions"] = [
-                    f"Use analyze_structure to see available classes and methods",
-                    f"Try search_symbols to find the correct symbol name",
-                    f"Check the symbol path format (e.g., 'ClassName.method_name')",
+                    f"Check if the package name is correct and installed",
+                    f"Verify the package is importable in your current environment",
+                    f"Try pip install {arguments.get('package_name', 'package_name')} if not installed",
                 ]
+
             else:
                 # Generic recovery suggestions
                 enhanced_response["recovery_suggestions"] = [
-                    f"Try analyze_structure to understand the package organization",
+                    f"Try analyze_structure to understand the package organization first",
                     f"Use search_symbols to explore available functionality",
                     f"Check the package name and ensure it's installed",
                 ]
+
+            # Add workflow guidance
+            enhanced_response["recommended_workflow"] = [
+                "1. Start with analyze_structure to see package organization",
+                "2. Use search_symbols to find specific classes/methods",
+                "3. Use get_package_docs with module_path='ClassName' for class info",
+                "4. Use get_source_code with symbol_name='ClassName.method' for implementations",
+            ]
 
             return {
                 "isError": True,
@@ -389,8 +442,8 @@ class MCPServer:
             ],
             "suggested_next_steps": (
                 [
-                    f"Use get_package_docs with module_path='ClassName.method_name' for detailed method documentation",
-                    f"Use get_source_code with symbol_name='ClassName.method_name' to see implementations",
+                    f"Use get_package_docs with module_path='ClassName' for detailed class documentation",
+                    f"Use get_source_code with symbol_name='ClassName.method_name' to see method implementations",
                     f"Try different search patterns if you didn't find what you're looking for",
                 ]
                 if results

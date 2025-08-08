@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2025-01-08
+### Fixed
+- **Enhanced Symbol Resolution**: Fixed critical bug where AI agents failed to use MCP tools correctly
+  - Improved `get_symbol_info` method with multiple fallback strategies for resolving class.method paths
+  - Fixed incorrect interpretation of dot-separated symbol paths (e.g., "MagicCalculator.compute")
+  - Added smart path parsing to distinguish between module.symbol and class.method patterns
+- **Better Error Messages**: Significantly improved error responses with actionable recovery suggestions
+  - Context-aware error guidance based on tool type and error conditions
+  - Specific format examples and common fixes for parameter mistakes
+  - Clear workflow recommendations to guide users to successful outcomes
+- **Enhanced Tool Descriptions**: Clarified MCP tool parameter usage to prevent common mistakes
+  - Improved `module_path` parameter description with clear examples
+  - Better distinction between `get_package_docs` and `get_source_code` usage patterns
+  - Added workflow guidance directly in tool descriptions
+
+### Changed
+- **Symbol Resolution Logic**: Completely reworked symbol resolution with multiple strategies
+  - Strategy 1: Treat first part as module, rest as nested symbols
+  - Strategy 2: Treat entire path as nested symbols in main package  
+  - Strategy 3: Progressive module resolution for deep nesting
+- **Error Recovery**: Enhanced all MCP tool error responses with structured recovery guidance
+  - `recovery_suggestions`: Specific actions to resolve the error
+  - `common_fixes`: Common parameter format corrections
+  - `recommended_workflow`: Step-by-step guidance for unfamiliar packages
+
 ## [0.4.1] - 2025-01-06
 
 ### Added - Enhanced AI Agent Experience
