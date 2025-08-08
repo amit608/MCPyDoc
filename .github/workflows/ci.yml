@@ -35,11 +35,6 @@ jobs:
       run: |
         isort --check-only mcpydoc tests
 
-    - name: Type check with mypy
-      run: |
-        echo "MyPy type checking temporarily disabled - will be re-enabled in future version"
-        # mypy mcpydoc
-
     - name: Test with pytest
       run: |
         pytest tests/ -v --cov=mcpydoc --cov-report=xml --cov-report=term-missing

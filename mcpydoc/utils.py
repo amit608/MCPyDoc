@@ -64,7 +64,7 @@ def categorize_symbols_by_type(symbols: Dict[str, Any]) -> Dict[str, List[str]]:
     Returns:
         Dictionary with symbols categorized by type
     """
-    categories = {
+    categories: Dict[str, List[str]] = {
         "classes": [],
         "functions": [],
         "methods": [],
@@ -251,7 +251,7 @@ def clean_docstring_whitespace(docstring: str) -> str:
     cleaned_lines = [lines[0]]  # First line keeps original indentation
     for line in lines[1:]:
         if line.strip():
-            cleaned_lines.append(line[min_indent:])
+            cleaned_lines.append(line[int(min_indent) :])
         else:
             cleaned_lines.append("")
 

@@ -26,14 +26,19 @@ MCPyDoc is a Model Context Protocol (MCP) server that provides comprehensive doc
 ```bash
 # Install from PyPI (Recommended)
 pip install mcpydoc
-
-# Or install from source
-git clone https://github.com/amit608/MCPyDoc.git
-cd MCPyDoc
-pip install .
 ```
 
 Once installed and configured with your AI agent, the server will automatically start when needed.
+
+### Development Installation
+
+If you want to contribute or modify the source code:
+
+```bash
+git clone https://github.com/amit608/MCPyDoc.git
+cd MCPyDoc
+pip install -e .[dev]
+```
 
 ## 🔌 Integration with you favorite coding AI agent
 
