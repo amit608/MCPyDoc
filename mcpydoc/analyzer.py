@@ -247,7 +247,7 @@ class PackageAnalyzer:
 
         Args:
             package_name: Name of the package containing the symbol
-            symbol_path: Dot-separated path to the symbol
+            symbol_path: Dot-separated path to the symbol (e.g., 'ClassName', 'ClassName.method', 'module.ClassName')
 
         Returns:
             SymbolInfo object containing symbol details
@@ -263,43 +263,90 @@ class PackageAnalyzer:
 
         # Audit log the operation
         audit_log("get_symbol_info", package_name=package_name, symbol_path=symbol_path)
-        # Handle both package-level and module-level symbols
+
+        # Enhanced symbol resolution with multiple fallback strategies
+        strategies = []
+
         if "." in symbol_path:
-            module_path, *symbol_parts = symbol_path.split(".")
-            module = self._import_module(f"{package_name}.{module_path}")
+            parts = symbol_path.split(".")
+
+            # Strategy 1: Treat first part as module, rest as nested symbols
+            strategies.append(
+                {"module_name": f"{package_name}.{parts[0]}", "symbol_parts": parts[1:]}
+            )
+
+            # Strategy 2: Treat entire path as nested symbols in main package
+            strategies.append({"module_name": package_name, "symbol_parts": parts})
+
+            # Strategy 3: Try progressive module resolution (for deep nesting)
+            for i in range(1, len(parts)):
+                module_parts = parts[:i]
+                symbol_parts = parts[i:]
+                strategies.append(
+                    {
+                        "module_name": f"{package_name}.{'.'.join(module_parts)}",
+                        "symbol_parts": symbol_parts,
+                    }
+                )
         else:
-            module = self._import_module(package_name)
-            symbol_parts = [symbol_path]
+            # Single symbol - try main package first
+            strategies.append(
+                {"module_name": package_name, "symbol_parts": [symbol_path]}
+            )
 
-        obj = module
-        full_path = package_name
-
-        # Navigate to the requested symbol
-        for part in symbol_parts:
+        # Try each strategy until one succeeds
+        last_error = None
+        for strategy in strategies:
             try:
-                obj = getattr(obj, part)
-                full_path += f".{part}"
-            except AttributeError:
-                raise SymbolNotFoundError(symbol_path, full_path)
+                module = self._import_module(strategy["module_name"])
+                obj = module
+                full_path = strategy["module_name"]
 
-        # Determine the symbol kind
-        kind = self._get_symbol_kind(obj)
+                # Navigate to the requested symbol
+                for part in strategy["symbol_parts"]:
+                    try:
+                        obj = getattr(obj, part)
+                        full_path += f".{part}"
+                    except AttributeError:
+                        raise SymbolNotFoundError(
+                            symbol_path, f"'{part}' not found in {full_path}"
+                        )
 
-        # Get the symbol's signature if applicable
-        signature = self._get_signature(obj)
+                # Determine the symbol kind
+                kind = self._get_symbol_kind(obj)
 
-        # Get source code if available
-        source = self._get_source_code(obj)
+                # Get the symbol's signature if applicable
+                signature = self._get_signature(obj)
 
-        return SymbolInfo(
-            name=getattr(obj, "__name__", str(obj)),
-            qualname=getattr(obj, "__qualname__", symbol_path),
-            kind=kind,
-            module=getattr(obj, "__module__", package_name),
-            docstring=getattr(obj, "__doc__", None),
-            signature=signature,
-            source=source,
-        )
+                # Get source code if available
+                source = self._get_source_code(obj)
+
+                return SymbolInfo(
+                    name=getattr(obj, "__name__", str(obj)),
+                    qualname=getattr(obj, "__qualname__", symbol_path),
+                    kind=kind,
+                    module=getattr(obj, "__module__", package_name),
+                    docstring=getattr(obj, "__doc__", None),
+                    signature=signature,
+                    source=source,
+                )
+
+            except (ImportError, SymbolNotFoundError) as e:
+                last_error = e
+                continue
+
+        # If all strategies failed, provide helpful error message
+        if last_error:
+            error_msg = (
+                f"Symbol '{symbol_path}' not found in package '{package_name}'. "
+            )
+            error_msg += "Try using analyze_structure to see available symbols, "
+            error_msg += "or search_symbols to find the correct symbol name."
+            raise SymbolNotFoundError(symbol_path, error_msg)
+        else:
+            raise SymbolNotFoundError(
+                symbol_path, f"No valid resolution strategy found for '{symbol_path}'"
+            )
 
     def _get_symbol_kind(self, obj: any) -> str:
         """Determine the kind of a Python object."""
