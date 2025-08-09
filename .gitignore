@@ -162,6 +162,9 @@ cython_debug/
 # VS Code
 .vscode/
 *.code-workspace
+vscode-extension/node_modules/
+vscode-extension/out/
+vscode-extension/dist/
 
 # Local configuration files
 *.local.*
