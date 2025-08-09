@@ -4,7 +4,6 @@
 [![PyPI version](https://badge.fury.io/py/mcpydoc.svg)](https://badge.fury.io/py/mcpydoc)
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 AI assistants often hallucinate when code depends on private or unfamiliar Python packages: guessed APIs, wrong signatures, and outdated usage that breaks at runtime. MCPyDoc fixes that by giving your assistant real-time access to the actual documentation and source code of the Python packages installed in your environment.
 
@@ -28,6 +27,46 @@ MCPyDoc is a Model Context Protocol (MCP) server that provides comprehensive doc
 For a zero-config setup inside VS Code, install the [**MCPyDoc** extension](https://marketplace.visualstudio.com/items?itemName=amit608.mcpydoc-vscode).
 It registers the server using the MCP Server Definition Provider API and
 automatically ensures the `mcpydoc` package is available when the server starts.
+
+### Installation for PyCharm AI Assistant
+
+1. **Install MCPyDoc** in the Python interpreter PyCharm will use for AI Assistant:
+
+   ```bash
+   pip install mcpydoc
+   ```
+
+   > 💡 If you use multiple interpreters/virtual environments, make sure `mcpydoc` is installed in the same environment PyCharm uses for MCP servers.
+   > You can check or change this in **Settings → Project → Python Interpreter**.
+
+2. **Open MCP configuration**:
+   Go to **Settings → Tools → AI Assistant → Model Context Protocol (MCP)**.
+
+3. **Add a new server**:
+
+   * Click **Add → As JSON**, and paste:
+
+     ```json
+     {
+       "mcpServers": {
+         "mcpydoc": {
+           "command": "python",
+           "args": ["-m", "mcpydoc"],
+           "env": {},
+           "description": "Python package documentation and code analysis server"
+         }
+       }
+     }
+     ```
+
+     Or use **Add → Command** and fill:
+
+     * **Command**: `python`
+     * **Arguments**: `-m mcpydoc`
+
+4. **Apply and restart AI Assistant**:
+   PyCharm will launch MCPyDoc automatically when the AI Assistant starts.
+
 
 ### Installation for other platforms
 
@@ -81,4 +120,3 @@ MIT License - see [LICENSE](LICENSE) file for details.
 4. Add tests
 5. Run the test suite
 6. Submit a pull request
-
