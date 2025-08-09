@@ -73,7 +73,7 @@ class MCPServer:
             "tools": [
                 {
                     "name": "get_package_docs",
-                    "description": "Get real-time comprehensive documentation for Python packages to prevent API hallucination. Essential when working with private libraries, unfamiliar packages, or when you need accurate method signatures instead of guessing. Use this to get actual documentation from the current environment rather than relying on potentially outdated training data. Perfect for understanding package capabilities, method parameters, return types, and usage examples. RECOMMENDED WORKFLOW: For unfamiliar packages, start with analyze_structure first to understand the package organization, then use this tool with the correct module paths.",
+                    "description": "Get real-time comprehensive documentation for Python packages to prevent API hallucination. Essential when working with private libraries, unfamiliar packages, or when you need accurate method signatures instead of guessing. Use this to get actual documentation from the current environment rather than relying on potentially outdated training data. Perfect for understanding package capabilities, method parameters, return types, and usage examples. RECOMMENDED WORKFLOW: For unfamiliar packages, start with analyze_structure first to understand the package organization, then use this tool with the correct module paths. PROGRESSIVE APPROACH: Use 'ClassName' for class overview, then 'ClassName.method_name' for specific method documentation. Try method-level docs before get_source_code - they're often sufficient.",
                     "inputSchema": {
                         "type": "object",
                         "properties": {
@@ -83,7 +83,7 @@ class MCPServer:
                             },
                             "module_path": {
                                 "type": "string",
-                                "description": "Optional path to specific class or module within the package. IMPORTANT: Use 'ClassName' for class docs (e.g., 'MagicCalculator'), NOT 'ClassName.method' format. For method details, use get_source_code instead. Examples: 'Session', 'Calculator', 'utils.helper_class'",
+                                "description": "Optional path to specific class or module within the package. Use 'ClassName' for class docs, 'ClassName.method_name' for method docs. Examples: 'Session', 'Calculator', 'ClassName.method_name', 'utils.helper_class'",
                             },
                             "version": {
                                 "type": "string",
@@ -95,7 +95,7 @@ class MCPServer:
                 },
                 {
                     "name": "search_symbols",
-                    "description": "Discover available classes, functions, and modules in private or unfamiliar Python packages to prevent API guessing and hallucination. Use this when you need to explore what functionality actually exists in a package that may not be in your training data. Essential for finding the right methods before writing code, discovering package capabilities, or when users ask about available functionality in third-party or private libraries. Returns actual symbol names and signatures from the current environment. Follow up with get_package_docs for detailed documentation of interesting symbols.",
+                    "description": "Discover available classes, functions, and modules in private or unfamiliar Python packages to prevent API guessing and hallucination. Use after analyze_structure when you need to find specific functionality by name. Perfect for exploring what functionality actually exists in a package that may not be in your training data before diving into documentation. Essential for finding the right methods before writing code, discovering package capabilities, or when users ask about available functionality in third-party or private libraries. Returns actual symbol names and signatures from the current environment. Follow up with get_package_docs for detailed documentation of interesting symbols.",
                     "inputSchema": {
                         "type": "object",
                         "properties": {
@@ -117,7 +117,7 @@ class MCPServer:
                 },
                 {
                     "name": "get_source_code",
-                    "description": "Retrieve actual implementation source code for Python functions or classes to understand exact behavior and avoid implementation guessing. Critical when working with private libraries or unfamiliar packages where you need to see the real implementation details, understand complex logic, or verify expected behavior. Use this when documentation alone isn't sufficient and you need to see how something actually works. Provides the definitive answer to 'how does this function/class actually work?' Perfect for debugging, understanding edge cases, or when adapting code to work with specific implementations.",
+                    "description": "Retrieve actual implementation source code for Python functions or classes to understand exact behavior and avoid implementation guessing. Required when working with private libraries or unfamiliar packages where you need to see the real implementation details, understand complex logic, or verify expected behavior after documentation proves insufficient. Use only when get_package_docs with specific method paths (e.g., 'ClassName.method_name') doesn't provide sufficient detail and always try method documentation first before inspecting source code. Provides the definitive answer to 'how does this function/class actually work?' Perfect for debugging edge cases or when adapting code to work with specific implementations.",
                     "inputSchema": {
                         "type": "object",
                         "properties": {
@@ -139,7 +139,7 @@ class MCPServer:
                 },
                 {
                     "name": "analyze_structure",
-                    "description": "Get a comprehensive overview of a Python package's complete structure and organization to understand its architecture before diving into specific components. This is the ideal starting point when encountering unfamiliar or private packages - use this FIRST to understand the package layout, available modules, main classes, and key functions. Prevents wasted time exploring incorrect paths and provides the foundation for making informed decisions about which specific tools to use next. Essential for understanding large, complex, or poorly documented packages. Follow up with search_symbols for targeted exploration or get_package_docs for specific components.",
+                    "description": "Get a comprehensive overview of a Python package's complete structure and organization to understand its architecture before diving into specific components. This is the mandatory starting point when encountering unfamiliar or private packages - use this FIRST to understand the package layout, available modules, main classes, and key functions. Prevents wasted time exploring incorrect paths and provides the foundation for making informed decisions about which specific tools to use next. Essential for understanding large, complex, or poorly documented packages. Follow up with search_symbols for targeted exploration or get_package_docs for specific components.",
                     "inputSchema": {
                         "type": "object",
                         "properties": {
@@ -443,7 +443,8 @@ class MCPServer:
             "suggested_next_steps": (
                 [
                     f"Use get_package_docs with module_path='ClassName' for detailed class documentation",
-                    f"Use get_source_code with symbol_name='ClassName.method_name' to see method implementations",
+                    f"Use get_package_docs with module_path='ClassName.method_name' for method documentation first",
+                    f"Use get_source_code only if method documentation isn't sufficient",
                     f"Try different search patterns if you didn't find what you're looking for",
                 ]
                 if results
