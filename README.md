@@ -67,29 +67,32 @@ automatically ensures the `mcpydoc` package is available when the server starts.
 4. **Apply and restart AI Assistant**:
    PyCharm will launch MCPyDoc automatically when the AI Assistant starts.
 
+### Installation for Other Platforms
 
-### Installation for other platforms
+1. **Install MCPyDoc**:
+   ```bash
+   pip install mcpydoc
+   ```
+   
+   > **Alternative**: You can also use `pipx install mcpydoc` or `uvx mcpydoc` if you prefer isolated environments.
 
-```bash
-pip install mcpydoc
-```
+2. **Add to your MCP configuration**:
+   ```json
+   {
+     "mcpServers": {
+       "mcpydoc": {
+         "command": "python",
+         "args": ["-m", "mcpydoc"],
+         "env": {},
+         "description": "Python package documentation and code analysis server"
+       }
+     }
+   }
+   ```
 
-Add MCPyDoc to your platform MCP configuration:
+   > **💡 Platform Note**: On some Linux/macOS systems, you may need to use `python3` instead of `python`. To check which command is available, run `python --version` or `python3 --version` in your terminal.
 
-```json
-{
-  "mcpServers": {
-    "mcpydoc": {
-      "command": "python",
-      "args": ["-m", "mcpydoc"],
-      "env": {},
-      "description": "Python package documentation and code analysis server"
-    }
-  }
-}
-```
-
-Once installed and configured with your AI agent, the server will automatically start when needed.
+   > **💡 pipx users**: If you installed with pipx, you can use `"command": "mcpydoc"` with empty args instead.
 
 ### Development Installation
 

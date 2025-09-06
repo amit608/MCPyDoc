@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2025-01-09
+
+### Modern Python Tooling Support
+
+#### **Added pipx/uvx Support**
+- **Script Entry**: Added `mcpydoc = "mcpydoc.__main__:cli_main"` to enable modern Python tooling
+- **pipx Compatibility**: Users can now install with `pipx install mcpydoc` and run with `mcpydoc`
+- **uvx Support**: Enables ephemeral execution with `uvx mcpydoc` using the ultra-fast uv package manager
+- **Professional CLI**: Provides clean command-line interface following Python packaging best practices
+
+#### **Enhanced Documentation**
+- **Modern Installation Methods**: Added comprehensive pipx/uvx installation instructions
+- **Multiple Execution Options**: Documents both `mcpydoc` and `python -m mcpydoc` execution methods
+- **Platform-Specific Guidance**: Maintained existing cross-platform compatibility notes
+- **User Choice**: Gives users flexibility between traditional pip and modern isolated environments
+
+#### **VS Code Extension Improvements (v0.2.0)**
+- **Automatic Python Detection**: Added intelligent detection of available Python commands (`python`, `python3`, `py`)
+- **Enhanced Error Handling**: Improved error messages when Python is not found
+- **Cross-Platform Support**: Extension now automatically adapts to different Python command availability
+- **Robust Installation**: Uses detected Python command for both version checking and package installation
+
+#### **Benefits**
+- **Modern Python Ecosystem**: Supports latest Python tooling trends (pipx/uvx)
+- **User Flexibility**: Multiple installation and execution options for different workflows
+- **Professional Experience**: Clean CLI interface matching user expectations
+- **Backward Compatibility**: Maintains existing `python -m mcpydoc` functionality
+
 ## [1.1.0] - 2025-01-08
 
 Improved tools docs for better clarity for the agent's utilization.
@@ -102,5 +130,7 @@ pip install mcpydoc
 
 **MCPyDoc v1.0.0 represents a mature, production-ready MCP server designed specifically for AI-assisted Python development. Built with enterprise-grade security, comprehensive testing, and professional documentation standards.**
 
-[Unreleased]: https://github.com/amit608/MCPyDoc/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/amit608/MCPyDoc/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/amit608/MCPyDoc/compare/v1.1.0...v1.2.0
+[1.1.0]: https://github.com/amit608/MCPyDoc/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/amit608/MCPyDoc/releases/tag/v1.0.0

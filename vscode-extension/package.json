@@ -2,7 +2,7 @@
   "name": "mcpydoc-vscode",
   "displayName": "MCPyDoc",
   "description": "A Model Context Protocol (MCP) server that gives AI agents real-time access to installed Python packages documentation and source code.",
-  "version": "0.1.8",
+  "version": "0.2.1",
   "publisher": "amit608",
   "engines": {
     "vscode": "^1.91.0"

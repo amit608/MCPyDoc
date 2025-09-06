@@ -8,7 +8,9 @@ import sys
 
 from .mcp_server import main
 
-if __name__ == "__main__":
+
+def cli_main():
+    """Synchronous entry point for script commands (pipx/uvx compatibility)."""
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
@@ -16,3 +18,7 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
+
+
+if __name__ == "__main__":
+    cli_main()
