@@ -1,6 +1,8 @@
 """Package analysis functionality for MCPyDoc."""
 
 import inspect
+import logging
+import os
 import sys
 from functools import lru_cache
 from importlib import import_module, metadata
@@ -25,6 +27,8 @@ from .security import (
     validate_version,
 )
 
+logger = logging.getLogger(__name__)
+
 
 class PackageAnalyzer:
     """Analyzes Python packages to extract documentation and structure."""
@@ -34,10 +38,16 @@ class PackageAnalyzer:
 
         Args:
             python_paths: List of paths to Python environments to search for packages.
-                        If None, uses the current environment.
+                        If None, uses intelligent environment detection to find
+                        the working directory's Python environment.
         """
         self._package_cache: Dict[str, ModuleType] = {}
-        self._python_paths = python_paths or [sys.prefix]
+        if python_paths is None:
+            from .env_detection import get_active_python_environments
+
+            self._python_paths = get_active_python_environments()
+        else:
+            self._python_paths = python_paths
         self._version_cache: Dict[str, Dict[str, PackageInfo]] = {}
 
     @timeout(30)
@@ -131,24 +141,63 @@ class PackageAnalyzer:
 
         # If not found as built-in/stdlib, search for installed packages
         if not found:
-            for path in self._python_paths:
-                sys.path.insert(0, path)
+            from .env_detection import get_site_packages_paths
+
+            # Get site-packages paths from python environment paths
+            site_packages = get_site_packages_paths(self._python_paths)
+
+            # Search in each environment
+            for env_path in self._python_paths:
+                # Temporarily add both the environment path and its site-packages to sys.path
+                paths_to_add = [env_path]
+
+                # Add corresponding site-packages if found
+                # Use proper path containment checking to avoid false positives
+                env_path_resolved = str(Path(env_path).resolve())
+                for sp in site_packages:
+                    sp_resolved = str(Path(sp).resolve())
+                    # Check if site-packages path is within the environment path
+                    if (
+                        sp_resolved.startswith(env_path_resolved + os.sep)
+                        or sp_resolved == env_path_resolved
+                    ):
+                        paths_to_add.append(sp)
+
+                # Insert paths at the beginning to prioritize this environment
+                inserted_count = 0
+                for p in paths_to_add:
+                    if p not in sys.path:
+                        sys.path.insert(inserted_count, p)
+                        inserted_count += 1
+
                 try:
                     dist = metadata.distribution(package_name)
                     found = True
+                    pkg_location = Path(dist.locate_file(""))
+
+                    logger.info(
+                        f"Found package '{package_name}' version {dist.metadata['Version']} "
+                        f"in environment: {env_path}"
+                    )
+
                     pkg_info = PackageInfo(
                         name=dist.metadata["Name"],
                         version=dist.metadata["Version"],
                         summary=dist.metadata.get("Summary"),
                         author=dist.metadata.get("Author"),
                         license=dist.metadata.get("License"),
-                        location=Path(dist.locate_file("")),
+                        location=pkg_location,
                     )
                     versions[pkg_info.version] = pkg_info
+
+                    # Package found, break to keep these paths in sys.path for imports
+                    break
                 except metadata.PackageNotFoundError:
+                    # Remove the temporarily added paths if package not found here
+                    for _ in range(inserted_count):
+                        if sys.path:
+                            sys.path.pop(0)
                     continue
-                finally:
-                    sys.path.pop(0)
 
         if not found:
             raise PackageNotFoundError(package_name, self._python_paths)

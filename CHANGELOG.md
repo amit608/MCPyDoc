@@ -7,6 +7,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0] - 2025-11-15
+
+### Enhanced Environment Detection
+
+#### **Intelligent Python Environment Discovery**
+- **New `env_detection.py` Module**: Comprehensive environment detection system
+- **Smart Environment Priority**: Prioritizes working directory environments over isolated pipx/uvx installations
+- **Manual Override**: Support for `MCPYDOC_PYTHON_PATH` environment variable to specify custom Python environments
+- **Virtual Environment Detection**: Automatically finds `.venv`, `venv`, `env`, `.env` in current working directory
+- **Poetry Support**: Detects and uses Poetry-managed virtual environments
+- **pipx/uvx Isolation Handling**: Intelligently avoids using isolated tool environments when better options exist
+
+#### **Environment Search Priority**
+1. `MCPYDOC_PYTHON_PATH` environment variable (manual override)
+2. `VIRTUAL_ENV` environment variable (activated virtual environment)
+3. Virtual environment in current working directory
+4. `sys.executable`'s environment (if not in pipx/uvx)
+5. `sys.prefix` (fallback)
+
+### VS Code Extension Improvements (v0.3.0)
+
+#### **Multi-Package Manager Support**
+- **pipx Support**: Run mcpydoc in isolated environment with `pipx run`
+- **uvx Support**: Ultra-fast execution with `uvx mcpydoc`
+- **uv Support**: Detection for modern uv package installer
+- **Traditional pip**: Continues to support standard Python pip installations
+
+#### **Enhanced Detection & Execution**
+- **Package Manager Detection**: Automatically detects available package managers on system
+- **Flexible Execution**: Tries multiple execution methods in order of preference
+- **Better Command Availability Checks**: More robust checking for Python and package manager commands
+- **Improved Error Messages**: Clearer feedback when commands or packages are not available
+
+### Benefits
+- **Better Local Development**: Automatically finds and uses project-specific virtual environments
+- **Modern Python Tooling**: Full support for pipx, uvx, and uv workflows
+- **Developer Flexibility**: Multiple ways to install and run MCPyDoc based on preferences
+- **Improved Reliability**: Smarter environment detection reduces configuration issues
+
 ## [1.2.0] - 2025-01-09
 
 ### Modern Python Tooling Support
@@ -130,7 +169,8 @@ pip install mcpydoc
 
 **MCPyDoc v1.0.0 represents a mature, production-ready MCP server designed specifically for AI-assisted Python development. Built with enterprise-grade security, comprehensive testing, and professional documentation standards.**
 
-[Unreleased]: https://github.com/amit608/MCPyDoc/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/amit608/MCPyDoc/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/amit608/MCPyDoc/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/amit608/MCPyDoc/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/amit608/MCPyDoc/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/amit608/MCPyDoc/releases/tag/v1.0.0

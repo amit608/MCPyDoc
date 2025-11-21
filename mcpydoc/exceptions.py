@@ -25,8 +25,34 @@ class PackageNotFoundError(MCPyDocError):
     ) -> None:
         message = f"Package '{package_name}' not found"
         details = None
+
         if searched_paths:
+            # Check if running in pipx/uvx isolated environment
+            from .env_detection import is_pipx_environment
+
+            in_pipx = any(is_pipx_environment(path) for path in searched_paths)
+
             details = f"Searched paths: {', '.join(searched_paths)}"
+
+            # Add helpful suggestions
+            if in_pipx:
+                details += (
+                    "\n\nℹ️  MCPyDoc is running in an isolated pipx/uvx environment. "
+                    "To access packages from your project:\n"
+                    "  1. Activate your project's virtual environment before running the AI assistant\n"
+                    "  2. Or set MCPYDOC_PYTHON_PATH to your project's Python environment path\n"
+                    "  3. Or ensure your project has a .venv, venv, or env folder in the current directory"
+                )
+            else:
+                details += (
+                    "\n\nℹ️  Troubleshooting:\n"
+                    "  1. Ensure the package is installed: pip install "
+                    + package_name
+                    + "\n"
+                    "  2. Activate your virtual environment if using one\n"
+                    "  3. Set MCPYDOC_PYTHON_PATH to specify a custom Python environment path"
+                )
+
         super().__init__(message, details)
         self.package_name = package_name
         self.searched_paths = searched_paths or []

@@ -22,16 +22,24 @@ This extension wires MCPyDoc into VS Code via the MCP Server Definition Provider
 1) Install this extension in VS Code.
 2) Use an MCP‑capable assistant (e.g., Cline, Cursor, GitHub Copilot).
 3) To validate - ask it to consult MCPyDoc, for example:
-	 - “Use MCPyDoc to show the docs for requests.get.”
-	 - “Search symbols in pandas for DataFrame methods.”
+	 - "Use MCPyDoc to show the docs for requests.get."
+	 - "Search symbols in pandas for DataFrame methods."
 
-That’s it—no manual configuration required.
+That's it—no manual configuration required. The extension automatically:
+- Detects whether you're using `python`, `python3`, or `py`
+- Chooses the best package manager (`pipx`, `uvx`, or `pip`)
+- Installs and runs MCPyDoc with optimal isolation
 
 ## Requirements
 
-- Python 3.9+ available as `python` on your PATH
-- pip available to install `mcpydoc` on first use
+- **Python 3.9+** available as `python`, `python3`, or `py` in your PATH
+- **One of the following package managers:**
+  - `pipx` (recommended - provides isolated execution)
+  - `uvx` / `uv` (fast, modern alternative)
+  - `pip` (standard Python package manager)
 - If you rely on a virtual environment, ensure that environment is active (or that its Python is first on PATH) so MCPyDoc analyzes the correct installed packages
+
+The extension automatically detects and uses the best available option, with preference for `pipx` or `uvx` for better isolation.
 
 ## Example scenario
 
