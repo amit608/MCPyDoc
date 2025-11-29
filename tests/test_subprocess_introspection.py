@@ -447,6 +447,8 @@ def test_is_subprocess_available(mock_cmd_available, uv_project, mock_project_di
     with patch(
         "mcpydoc.subprocess_introspection._find_project_root", return_value=None
     ):
+        # Clear cache again inside patch context to ensure fresh detection
+        clear_cache()
         assert is_subprocess_available(mock_project_dir) is False
 
 

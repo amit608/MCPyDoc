@@ -217,7 +217,12 @@ def search_common_project_directories() -> List[str]:
         List of discovered Python environment paths
     """
     discovered = []
-    home = Path.home()
+    try:
+        home = Path.home()
+    except RuntimeError:
+        # Path.home() can fail on some CI environments (e.g., Windows runners)
+        logger.debug("Could not determine home directory, skipping common directories")
+        return discovered
 
     # Common project directory names
     common_dirs = ["projects", "dev", "code", "workspace", "work", "src", "repos"]

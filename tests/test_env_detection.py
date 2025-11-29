@@ -2,6 +2,7 @@
 
 import json
 import os
+import sys
 import tempfile
 from pathlib import Path
 from unittest.mock import patch
@@ -18,6 +19,19 @@ from mcpydoc.env_detection import (
     resolve_python_path_from_config,
     search_common_project_directories,
 )
+
+
+def create_mock_venv(venv_dir: Path) -> None:
+    """Create a mock virtual environment structure (cross-platform)."""
+    venv_dir.mkdir(exist_ok=True)
+    if sys.platform == "win32":
+        scripts_dir = venv_dir / "Scripts"
+        scripts_dir.mkdir(exist_ok=True)
+        (scripts_dir / "python.exe").touch()
+    else:
+        bin_dir = venv_dir / "bin"
+        bin_dir.mkdir(exist_ok=True)
+        (bin_dir / "python").touch()
 
 
 class TestIsPipxEnvironment:
@@ -122,9 +136,7 @@ class TestGetPwdEnvironment:
         """Test detection of venv in PWD directory."""
         with tempfile.TemporaryDirectory() as tmpdir:
             venv_dir = Path(tmpdir) / ".venv"
-            venv_dir.mkdir()
-            (venv_dir / "bin").mkdir()
-            (venv_dir / "bin" / "python").touch()
+            create_mock_venv(venv_dir)
 
             with patch.dict(os.environ, {"PWD": tmpdir}):
                 result = get_pwd_environment()
@@ -151,9 +163,7 @@ class TestGetSearchPathsFromEnv:
         """Test single search path."""
         with tempfile.TemporaryDirectory() as tmpdir:
             venv_dir = Path(tmpdir) / ".venv"
-            venv_dir.mkdir()
-            (venv_dir / "bin").mkdir()
-            (venv_dir / "bin" / "python").touch()
+            create_mock_venv(venv_dir)
 
             with patch.dict(os.environ, {"MCPYDOC_SEARCH_PATHS": tmpdir}):
                 result = get_search_paths_from_env()
@@ -176,8 +186,10 @@ class TestGetActivePythonEnvironments:
         with tempfile.TemporaryDirectory() as tmpdir:
             with patch.dict(os.environ, {"MCPYDOC_PYTHON_PATH": tmpdir}):
                 result = get_active_python_environments(use_cache=False)
-                # Manual path should be first
-                assert tmpdir in result[0]
+                # Manual path should be first - normalize for cross-platform comparison
+                resolved_tmpdir = Path(tmpdir).resolve()
+                resolved_first = Path(result[0]).resolve()
+                assert resolved_tmpdir == resolved_first
 
     @patch.dict(os.environ, {"VIRTUAL_ENV": "/tmp/venv"}, clear=True)
     def test_virtual_env_detection(self):
@@ -185,10 +197,12 @@ class TestGetActivePythonEnvironments:
         with tempfile.TemporaryDirectory() as tmpdir:
             with patch.dict(os.environ, {"VIRTUAL_ENV": tmpdir}):
                 result = get_active_python_environments(use_cache=False)
-                # Resolve paths for comparison (macOS /var -> /private/var symlink)
-                resolved_tmpdir = str(Path(tmpdir).resolve())
-                resolved_results = [str(Path(r).resolve()) for r in result]
-                assert resolved_tmpdir in resolved_results
+                # Resolve and normalize paths for comparison (cross-platform)
+                # Handles macOS symlinks (/var -> /private/var) and Windows path normalization
+                resolved_tmpdir = Path(tmpdir).resolve()
+                resolved_results = [Path(r).resolve() for r in result]
+                # Use Path comparison for cross-platform compatibility
+                assert any(resolved_tmpdir == p for p in resolved_results)
 
     def test_returns_list(self):
         """Test that function returns a list."""
@@ -237,9 +251,7 @@ class TestFindVenvInDirectory:
         """Test finding .venv directory."""
         with tempfile.TemporaryDirectory() as tmpdir:
             venv_dir = Path(tmpdir) / ".venv"
-            venv_dir.mkdir()
-            (venv_dir / "bin").mkdir()
-            (venv_dir / "bin" / "python").touch()
+            create_mock_venv(venv_dir)
 
             result = find_venv_in_directory(Path(tmpdir))
             assert result == str(venv_dir)
@@ -248,9 +260,7 @@ class TestFindVenvInDirectory:
         """Test finding venv directory."""
         with tempfile.TemporaryDirectory() as tmpdir:
             venv_dir = Path(tmpdir) / "venv"
-            venv_dir.mkdir()
-            (venv_dir / "bin").mkdir()
-            (venv_dir / "bin" / "python").touch()
+            create_mock_venv(venv_dir)
 
             result = find_venv_in_directory(Path(tmpdir))
             assert result == str(venv_dir)
