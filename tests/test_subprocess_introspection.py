@@ -442,8 +442,12 @@ def test_is_subprocess_available(mock_cmd_available, uv_project, mock_project_di
 
     clear_cache()
 
-    # Should not be available for empty directory
-    assert is_subprocess_available(mock_project_dir) is False
+    # Should not be available for empty directory (mock _find_project_root to prevent
+    # searching up to parent directories which might find the test runner's project)
+    with patch(
+        "mcpydoc.subprocess_introspection._find_project_root", return_value=None
+    ):
+        assert is_subprocess_available(mock_project_dir) is False
 
 
 @pytest.mark.integration

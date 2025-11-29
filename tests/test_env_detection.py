@@ -185,7 +185,10 @@ class TestGetActivePythonEnvironments:
         with tempfile.TemporaryDirectory() as tmpdir:
             with patch.dict(os.environ, {"VIRTUAL_ENV": tmpdir}):
                 result = get_active_python_environments(use_cache=False)
-                assert tmpdir in result
+                # Resolve paths for comparison (macOS /var -> /private/var symlink)
+                resolved_tmpdir = str(Path(tmpdir).resolve())
+                resolved_results = [str(Path(r).resolve()) for r in result]
+                assert resolved_tmpdir in resolved_results
 
     def test_returns_list(self):
         """Test that function returns a list."""
