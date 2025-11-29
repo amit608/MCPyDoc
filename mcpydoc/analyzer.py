@@ -17,7 +17,7 @@ from .exceptions import (
     ValidationError,
     VersionConflictError,
 )
-from .models import PackageInfo, SymbolInfo
+from .models import MethodSummary, PackageInfo, SymbolInfo
 from .security import (
     audit_log,
     memory_limit,
@@ -26,6 +26,13 @@ from .security import (
     validate_symbol_path,
     validate_version,
 )
+from .subprocess_introspection import (
+    get_working_directory,
+    introspect_package_docstring,
+    introspect_package_info,
+    introspect_symbol,
+    search_symbols_subprocess,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -33,15 +40,27 @@ logger = logging.getLogger(__name__)
 class PackageAnalyzer:
     """Analyzes Python packages to extract documentation and structure."""
 
-    def __init__(self, python_paths: Optional[List[str]] = None) -> None:
+    def __init__(
+        self,
+        python_paths: Optional[List[str]] = None,
+        enable_subprocess: bool = True,
+        working_directory: Optional[Path] = None,
+    ) -> None:
         """Initialize the analyzer with optional Python environment paths.
 
         Args:
             python_paths: List of paths to Python environments to search for packages.
                         If None, uses intelligent environment detection to find
                         the working directory's Python environment.
+            enable_subprocess: If True, use subprocess introspection via package managers
+                             as the primary method (solves Python version mismatches).
+            working_directory: Working directory for package manager detection.
+                             If None, uses get_working_directory().
         """
         self._package_cache: Dict[str, ModuleType] = {}
+        self._explicit_python_paths = (
+            python_paths  # Store if user provided explicit paths
+        )
         if python_paths is None:
             from .env_detection import get_active_python_environments
 
@@ -49,6 +68,26 @@ class PackageAnalyzer:
         else:
             self._python_paths = python_paths
         self._version_cache: Dict[str, Dict[str, PackageInfo]] = {}
+        self._subprocess_enabled = enable_subprocess
+        self._working_directory = working_directory or get_working_directory()
+
+    def refresh_environments(self) -> None:
+        """Refresh Python environments and working directory.
+
+        This should be called when the MCP client roots change,
+        to pick up the new workspace's virtual environment.
+        """
+        # Only refresh if user didn't provide explicit paths
+        if self._explicit_python_paths is None:
+            from .env_detection import get_active_python_environments
+
+            # Force re-detection (bypass cache)
+            self._python_paths = get_active_python_environments(use_cache=False)
+            logger.info(f"Refreshed Python environments: {self._python_paths}")
+
+        # Always refresh working directory
+        self._working_directory = get_working_directory()
+        logger.info(f"Refreshed working directory: {self._working_directory}")
 
     @timeout(30)
     def get_package_info(
@@ -75,6 +114,7 @@ class PackageAnalyzer:
 
         # Audit log the operation
         audit_log("get_package_info", package_name=package_name, version=version)
+
         # Check version cache first
         if package_name in self._version_cache:
             versions = self._version_cache[package_name]
@@ -85,6 +125,34 @@ class PackageAnalyzer:
             # Return latest version if no specific version requested
             latest = max(versions.keys())
             return versions[latest]
+
+        # Try subprocess introspection first (solves Python version mismatches)
+        if self._subprocess_enabled:
+            pkg_data = introspect_package_info(package_name, self._working_directory)
+            if pkg_data and "error" not in pkg_data:
+                logger.info(
+                    f"Using subprocess introspection for {package_name} "
+                    f"(avoids Python version mismatch)"
+                )
+                pkg_info = PackageInfo(
+                    name=pkg_data["name"],
+                    version=pkg_data["version"],
+                    summary=pkg_data.get("summary"),
+                    author=pkg_data.get("author"),
+                    license=pkg_data.get("license"),
+                    location=(
+                        Path(pkg_data["location"]) if pkg_data.get("location") else None
+                    ),
+                )
+                # Cache the result
+                versions = {pkg_info.version: pkg_info}
+                self._version_cache[package_name] = versions
+                return pkg_info
+            else:
+                logger.debug(
+                    f"Subprocess introspection not available for {package_name}, "
+                    f"falling back to direct import"
+                )
 
         versions = {}
         found = False
@@ -200,7 +268,10 @@ class PackageAnalyzer:
                     continue
 
         if not found:
-            raise PackageNotFoundError(package_name, self._python_paths)
+            from .env_detection import get_searched_directories
+
+            searched_dirs = get_searched_directories()
+            raise PackageNotFoundError(package_name, self._python_paths, searched_dirs)
 
         self._version_cache[package_name] = versions
 
@@ -290,6 +361,44 @@ class PackageAnalyzer:
         except Exception as e:
             raise ImportError(module_path, e)
 
+    def get_package_docstring(
+        self, package_name: str, version: Optional[str] = None
+    ) -> Optional[str]:
+        """Get the package-level docstring.
+
+        Uses subprocess introspection if available, falling back to direct import.
+
+        Args:
+            package_name: Name of the package
+            version: Specific version to use (optional)
+
+        Returns:
+            Package docstring, or None if not available
+        """
+        # Try subprocess introspection first
+        if self._subprocess_enabled:
+            docstring_data = introspect_package_docstring(
+                package_name, self._working_directory
+            )
+            if docstring_data and "error" not in docstring_data:
+                logger.info(
+                    f"Using subprocess introspection for {package_name} docstring"
+                )
+                return docstring_data.get("docstring")
+            else:
+                logger.debug(
+                    f"Subprocess docstring introspection not available, "
+                    f"falling back to direct import"
+                )
+
+        # Fall back to direct import
+        try:
+            module = self._import_module(package_name, version)
+            return module.__doc__
+        except Exception as e:
+            logger.warning(f"Failed to get docstring for {package_name}: {e}")
+            return None
+
     @timeout(20)
     def get_symbol_info(self, package_name: str, symbol_path: str) -> SymbolInfo:
         """Get detailed information about a symbol in a package.
@@ -312,6 +421,42 @@ class PackageAnalyzer:
 
         # Audit log the operation
         audit_log("get_symbol_info", package_name=package_name, symbol_path=symbol_path)
+
+        # Try subprocess introspection first
+        if self._subprocess_enabled:
+            symbol_data = introspect_symbol(
+                package_name, symbol_path, self._working_directory
+            )
+            if symbol_data and "error" not in symbol_data:
+                logger.info(
+                    f"Using subprocess introspection for {package_name}.{symbol_path}"
+                )
+                # Convert methods list to MethodSummary objects
+                methods = None
+                if symbol_data.get("methods"):
+                    methods = [
+                        MethodSummary(
+                            name=m["name"],
+                            signature=m.get("signature"),
+                            doc_preview=m.get("doc_preview"),
+                        )
+                        for m in symbol_data["methods"]
+                    ]
+                return SymbolInfo(
+                    name=symbol_data["name"],
+                    qualname=symbol_data["qualname"],
+                    kind=symbol_data["kind"],
+                    module=symbol_data["module"],
+                    docstring=symbol_data.get("docstring"),
+                    signature=symbol_data.get("signature"),
+                    source=symbol_data.get("source"),
+                    methods=methods,
+                )
+            else:
+                logger.debug(
+                    f"Subprocess introspection not available for symbol, "
+                    f"falling back to direct import"
+                )
 
         # Enhanced symbol resolution with multiple fallback strategies
         strategies = []
@@ -370,6 +515,11 @@ class PackageAnalyzer:
                 # Get source code if available
                 source = self._get_source_code(obj)
 
+                # For classes, extract method summaries
+                methods = None
+                if kind == "class":
+                    methods = self._get_class_methods(obj)
+
                 return SymbolInfo(
                     name=getattr(obj, "__name__", str(obj)),
                     qualname=getattr(obj, "__qualname__", symbol_path),
@@ -378,6 +528,7 @@ class PackageAnalyzer:
                     docstring=getattr(obj, "__doc__", None),
                     signature=signature,
                     source=source,
+                    methods=methods,
                 )
 
             except (ImportError, SymbolNotFoundError) as e:
@@ -430,6 +581,61 @@ class PackageAnalyzer:
         except (TypeError, OSError, AttributeError):
             return None
 
+    def _get_class_methods(self, cls: type) -> Optional[List[MethodSummary]]:
+        """Get a summary of methods for a class.
+
+        Args:
+            cls: The class to extract methods from
+
+        Returns:
+            List of MethodSummary objects, or None if extraction fails
+        """
+        try:
+            methods = []
+            for name, method in inspect.getmembers(
+                cls, predicate=lambda x: inspect.isfunction(x) or inspect.ismethod(x)
+            ):
+                # Skip private methods but keep important dunders
+                if name.startswith("_") and not name.startswith("__"):
+                    continue
+                if name.startswith("__") and name not in (
+                    "__init__",
+                    "__call__",
+                    "__enter__",
+                    "__exit__",
+                    "__aenter__",
+                    "__aexit__",
+                ):
+                    continue
+
+                method_sig = self._get_signature(method)
+                method_doc = getattr(method, "__doc__", None)
+
+                # Get first line of docstring as preview
+                doc_preview = None
+                if method_doc:
+                    first_line = method_doc.strip().split("\n")[0]
+                    doc_preview = (
+                        first_line[:100] + "..."
+                        if len(first_line) > 100
+                        else first_line
+                    )
+
+                methods.append(
+                    MethodSummary(
+                        name=name,
+                        signature=method_sig,
+                        doc_preview=doc_preview,
+                    )
+                )
+
+            # Sort: __init__ first, then alphabetically
+            methods.sort(key=lambda m: (0 if m.name == "__init__" else 1, m.name))
+            # Limit to 30 methods
+            return methods[:30] if methods else None
+        except Exception:
+            return None
+
     @timeout(45)
     @memory_limit(256)
     def search_symbols(
@@ -466,20 +672,60 @@ class PackageAnalyzer:
             pattern=pattern,
             version=version,
         )
+
+        # Try subprocess introspection first
+        if self._subprocess_enabled:
+            symbols_data = search_symbols_subprocess(
+                package_name, pattern, self._working_directory
+            )
+            if symbols_data is not None:
+                logger.info(
+                    f"Using subprocess introspection for searching {package_name} "
+                    f"(found {len(symbols_data)} symbols)"
+                )
+                results = []
+                for symbol_data in symbols_data:
+                    results.append(
+                        SymbolInfo(
+                            name=symbol_data["name"],
+                            qualname=symbol_data["qualname"],
+                            kind=symbol_data["kind"],
+                            module=symbol_data["module"],
+                            docstring=symbol_data.get("docstring"),
+                            signature=symbol_data.get("signature"),
+                            source=None,  # Source not included in search results
+                        )
+                    )
+                return results
+            else:
+                logger.debug(
+                    f"Subprocess introspection not available for search, "
+                    f"falling back to direct import"
+                )
+
         results = []
+        logger.info(f"Starting symbol search for package: {package_name}")
         package = self._import_module(package_name, version)
+        logger.info(f"Successfully imported {package_name}, module: {package.__name__}")
 
         def _scan_module(module: ModuleType, prefix: str = "") -> None:
             # Get all module contents, both direct and imported
-            for name, obj in inspect.getmembers(module):
+            members = inspect.getmembers(module)
+            logger.debug(
+                f"Scanning module {module.__name__} (prefix: '{prefix}'), found {len(members)} members"
+            )
+
+            for name, obj in members:
                 # Skip private attributes
                 if name.startswith("_"):
                     continue
 
-                # For the root package, include all objects
-                # For submodules, only include objects defined in the package
-                if prefix and hasattr(obj, "__module__"):
-                    if not (obj.__module__ or "").startswith(package_name):
+                # Filter out symbols not from this package
+                # Only include symbols that belong to the target package or its submodules
+                if hasattr(obj, "__module__"):
+                    obj_module = obj.__module__ or ""
+                    # Skip if symbol is from a different package entirely
+                    if not obj_module.startswith(package_name):
                         continue
 
                 full_name = f"{prefix}{name}" if prefix else name
@@ -489,13 +735,34 @@ class PackageAnalyzer:
                     continue
 
                 try:
-                    # For root level symbols, use the name directly
+                    # Try to get symbol info
+                    # For root level, first try the simple name
                     if not prefix:
-                        info = self.get_symbol_info(package_name, name)
+                        try:
+                            info = self.get_symbol_info(package_name, name)
+                        except (SymbolNotFoundError, AttributeError):
+                            # If that fails and object has __module__, try the full path
+                            if (
+                                hasattr(obj, "__module__")
+                                and obj.__module__ != package_name
+                            ):
+                                # Construct the path from the module
+                                module_suffix = obj.__module__[
+                                    len(package_name) :
+                                ].lstrip(".")
+                                if module_suffix:
+                                    full_path = f"{module_suffix}.{name}"
+                                    info = self.get_symbol_info(package_name, full_path)
+                                else:
+                                    raise
+                            else:
+                                raise
                     else:
                         info = self.get_symbol_info(package_name, full_name)
                     results.append(info)
-                except (ImportError, SymbolNotFoundError, AttributeError):
+                except (ImportError, SymbolNotFoundError, AttributeError) as e:
+                    # Log the error for debugging but continue scanning
+                    logger.debug(f"Could not get symbol info for {full_name}: {e}")
                     continue
 
                 # Search for methods within classes
@@ -560,6 +827,65 @@ class PackageAnalyzer:
                     _scan_module(obj, prefix=f"{full_name}." if prefix else f"{name}.")
 
         _scan_module(package)
+
+        # Explicitly discover and scan submodules that aren't imported in __init__.py
+        # This is crucial for packages like fido2 where classes are in submodules
+        if hasattr(package, "__path__") and len(results) < 1000:
+            logger.info(f"Discovering submodules for {package_name}")
+            try:
+                import pkgutil
+
+                scanned_modules = {package.__name__}  # Track what we've scanned
+                submodule_count = 0
+
+                for importer, modname, ispkg in pkgutil.iter_modules(
+                    package.__path__, prefix=f"{package_name}."
+                ):
+                    submodule_count += 1
+                    logger.info(f"Found submodule: {modname}")
+
+                    if modname not in scanned_modules and len(results) < 1000:
+                        try:
+                            # Import the submodule
+                            logger.info(f"Importing submodule: {modname}")
+                            submod = self._import_module(modname, version)
+                            scanned_modules.add(modname)
+
+                            # Extract just the submodule name for prefix
+                            submod_suffix = modname[len(package_name) :].lstrip(".")
+
+                            # Scan it
+                            logger.info(
+                                f"Scanning submodule: {modname} with prefix: {submod_suffix}"
+                            )
+                            before_count = len(results)
+                            _scan_module(submod, prefix=f"{submod_suffix}.")
+                            after_count = len(results)
+                            logger.info(
+                                f"Submodule {modname} yielded {after_count - before_count} symbols"
+                            )
+                        except Exception as e:
+                            logger.error(
+                                f"Failed to scan submodule {modname}: {type(e).__name__}: {e}",
+                                exc_info=True,
+                            )
+                            continue
+
+                logger.info(
+                    f"Discovered {submodule_count} submodules for {package_name}, total results: {len(results)}"
+                )
+            except Exception as e:
+                logger.error(
+                    f"Failed to discover submodules for {package_name}: {type(e).__name__}: {e}",
+                    exc_info=True,
+                )
+        else:
+            if not hasattr(package, "__path__"):
+                logger.warning(
+                    f"Package {package_name} does not have __path__, cannot discover submodules"
+                )
+
+        logger.info(f"Total symbols found for {package_name}: {len(results)}")
         return results
 
     def get_type_hints_safe(self, obj: any) -> Dict[str, str]:

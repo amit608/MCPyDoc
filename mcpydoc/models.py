@@ -19,6 +19,16 @@ class PackageInfo(BaseModel):
     location: Optional[Path] = Field(None, description="Package installation location")
 
 
+class MethodSummary(BaseModel):
+    """Summary of a class method."""
+
+    model_config = ConfigDict(frozen=True)
+
+    name: str = Field(..., description="Method name")
+    signature: Optional[str] = Field(None, description="Method signature")
+    doc_preview: Optional[str] = Field(None, description="First line of docstring")
+
+
 class SymbolInfo(BaseModel):
     """Information about a Python symbol (function, class, etc.)."""
 
@@ -31,6 +41,9 @@ class SymbolInfo(BaseModel):
     docstring: Optional[str] = Field(None, description="Symbol docstring")
     signature: Optional[str] = Field(None, description="Symbol signature")
     source: Optional[str] = Field(None, description="Source code")
+    methods: Optional[List[MethodSummary]] = Field(
+        None, description="List of methods (for classes)"
+    )
 
 
 class DocumentationInfo(BaseModel):

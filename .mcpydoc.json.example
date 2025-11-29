@@ -1,0 +1,8 @@
+{
+  "python_path": ".venv",
+  "fallback_paths": [
+    "~/.pyenv/versions/3.12.0",
+    "../shared-environment"
+  ]
+}
+

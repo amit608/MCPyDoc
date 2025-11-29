@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.0] - 2025-11-29
+
+### Zero-Config Workspace Detection
+
+#### **MCP Roots Capability Support**
+- **Automatic Workspace Detection**: MCPyDoc now uses the MCP `roots` capability to automatically detect your workspace directory from compatible clients (Cursor, VS Code, etc.)
+- **No Configuration Required**: Works out-of-the-box with compatible MCP clients—no need to set `PWD` or other environment variables
+- **Dynamic Updates**: Handles `notifications/roots/list_changed` to update when you switch workspaces
+
+#### **Enhanced Class Documentation**
+- **Method Summaries**: When fetching class documentation, now includes a list of methods with signatures and doc previews
+- **Improved Docstring Resolution**: Better handling of inherited docstrings for methods that override parent class methods
+- **Reduced Tool Calls**: Agents can now see all available methods at a glance, reducing the number of API calls needed
+
+#### **Environment Detection Priority**
+Updated priority order for finding Python environments:
+1. **MCP Client Roots** (NEW - zero config, highest priority)
+2. `MCPYDOC_PYTHON_PATH` - Manual override
+3. `VIRTUAL_ENV` - Activated virtual environment
+4. `PWD` - Working directory venv search
+5. Common project directories
+6. `MCPYDOC_SEARCH_PATHS` - Custom directories
+7. Current working directory
+8. System Python (fallback)
+
+### Documentation
+- Simplified README with cleaner, more concise installation instructions
+- Focus on zero-config experience for modern MCP clients
+
 ## [1.3.0] - 2025-11-15
 
 ### Enhanced Environment Detection
@@ -169,7 +198,8 @@ pip install mcpydoc
 
 **MCPyDoc v1.0.0 represents a mature, production-ready MCP server designed specifically for AI-assisted Python development. Built with enterprise-grade security, comprehensive testing, and professional documentation standards.**
 
-[Unreleased]: https://github.com/amit608/MCPyDoc/compare/v1.3.0...HEAD
+[Unreleased]: https://github.com/amit608/MCPyDoc/compare/v1.4.0...HEAD
+[1.4.0]: https://github.com/amit608/MCPyDoc/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/amit608/MCPyDoc/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/amit608/MCPyDoc/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/amit608/MCPyDoc/compare/v1.0.0...v1.1.0

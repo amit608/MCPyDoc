@@ -99,8 +99,9 @@ class MCPyDoc:
             )
         else:
             # Return package-level documentation
-            module = self.analyzer._import_module(package_name, version)
-            documentation = self.doc_parser.parse_docstring(module.__doc__)
+            # Use get_package_docstring which uses subprocess introspection
+            docstring = self.analyzer.get_package_docstring(package_name, version)
+            documentation = self.doc_parser.parse_docstring(docstring)
 
             # Suggest starting points for package exploration
             suggested_next_steps = [
@@ -258,9 +259,9 @@ class MCPyDoc:
             else:
                 other.append(result)
 
-        # Get package-level documentation
-        module = self.analyzer._import_module(package_name, version)
-        package_documentation = self.doc_parser.parse_docstring(module.__doc__)
+        # Get package-level documentation using subprocess introspection
+        docstring = self.analyzer.get_package_docstring(package_name, version)
+        package_documentation = self.doc_parser.parse_docstring(docstring)
 
         # Generate suggested next steps based on what was found
         suggested_next_steps = []

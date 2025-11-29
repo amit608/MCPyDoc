@@ -10,7 +10,7 @@ import asyncio
 import json
 import logging
 import sys
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 import mcpydoc
 
@@ -33,6 +33,12 @@ class MCPServer:
         self.mcpydoc = MCPyDoc()
         self.request_id = 0
         self.logger = logging.getLogger(__name__)
+        # Track client capabilities for roots support
+        self._client_capabilities: Dict[str, Any] = {}
+        self._client_roots: List[str] = []
+        self._pending_requests: Dict[int, Any] = {}
+        self._next_request_id = 1
+        self._roots_requested = False
 
     def _create_response(
         self,
@@ -60,7 +66,22 @@ class MCPServer:
         return error
 
     async def _handle_initialize(self, params: Dict[str, Any]) -> Dict[str, Any]:
-        """Handle MCP initialize request."""
+        """Handle MCP initialize request.
+
+        Captures client capabilities, particularly the 'roots' capability which
+        allows us to automatically detect the user's workspace directory.
+        """
+        # Store client capabilities for later use
+        self._client_capabilities = params.get("capabilities", {})
+
+        self.logger.info(f"Client capabilities: {self._client_capabilities}")
+
+        # Check if client supports roots
+        if "roots" in self._client_capabilities:
+            self.logger.info(
+                "Client supports roots capability - will request workspace roots"
+            )
+
         return {
             "protocolVersion": "2024-11-05",
             "capabilities": {"tools": {}, "resources": {}},
@@ -160,6 +181,10 @@ class MCPServer:
 
     async def _handle_tools_call(self, params: Dict[str, Any]) -> Dict[str, Any]:
         """Handle tools/call request."""
+        # Ensure we've requested roots from client (non-blocking)
+        # The response will be processed asynchronously when it arrives
+        self._ensure_roots_requested()
+
         tool_name = params.get("name")
         arguments = params.get("arguments", {})
 
@@ -277,6 +302,140 @@ class MCPServer:
                 ],
             }
 
+    def _create_request(
+        self, method: str, params: Dict[str, Any] = None
+    ) -> tuple[int, str]:
+        """Create a JSON-RPC request to send to the client.
+
+        Returns:
+            Tuple of (request_id, json_string)
+        """
+        request_id = self._next_request_id
+        self._next_request_id += 1
+
+        request = {
+            "jsonrpc": "2.0",
+            "id": request_id,
+            "method": method,
+        }
+        if params:
+            request["params"] = params
+
+        return request_id, json.dumps(request)
+
+    def _send_roots_request(self) -> None:
+        """Send a roots/list request to the client (non-blocking).
+
+        The response will be handled asynchronously when it arrives.
+        """
+        if "roots" not in self._client_capabilities:
+            self.logger.debug("Client does not support roots capability")
+            return
+
+        if self._roots_requested:
+            return  # Already sent request
+
+        self.logger.info("Requesting roots from client...")
+        self._roots_requested = True
+
+        # Create and send the request
+        request_id, request_json = self._create_request("roots/list")
+        self._pending_requests[request_id] = None  # Mark as pending (no future needed)
+
+        # Send request to client via stdout
+        print(request_json, flush=True)
+
+    def _handle_response(self, response: Dict[str, Any]) -> bool:
+        """Handle a JSON-RPC response (to a server-initiated request).
+
+        Returns:
+            True if this was a response to a pending request, False otherwise
+        """
+        response_id = response.get("id")
+        if response_id is None:
+            return False
+
+        # Check if this is a response to a pending request
+        if response_id not in self._pending_requests:
+            return False
+
+        # Remove from pending
+        self._pending_requests.pop(response_id, None)
+
+        # Handle the response
+        if "error" in response:
+            self.logger.warning(
+                f"Error response for request {response_id}: {response['error']}"
+            )
+            return True
+
+        result = response.get("result", {})
+
+        # Check if this is a roots/list response
+        if "roots" in result:
+            self._handle_roots_response(result)
+
+        return True
+
+    def _handle_roots_response(self, result: Dict[str, Any]) -> None:
+        """Handle the roots/list response from the client."""
+        roots = result.get("roots", [])
+        self._client_roots = []
+
+        for root in roots:
+            uri = root.get("uri", "")
+            # Convert file:// URI to path
+            if uri.startswith("file://"):
+                path = uri[7:]  # Remove "file://" prefix
+                self._client_roots.append(path)
+                self.logger.info(f"Client root: {path}")
+
+        # Update working directory based on roots
+        if self._client_roots:
+            from .subprocess_introspection import set_working_directory
+
+            set_working_directory(self._client_roots[0])
+            self.logger.info(
+                f"Working directory set from client roots: {self._client_roots[0]}"
+            )
+
+            # Refresh the analyzer's environments to pick up the new workspace
+            self.mcpydoc.analyzer.refresh_environments()
+
+    def _ensure_roots_requested(self) -> None:
+        """Ensure we've requested roots from the client (if supported).
+
+        This is non-blocking - the roots will be processed when the
+        response arrives. The first tool call may not have roots available,
+        but subsequent calls will.
+        """
+        if "roots" in self._client_capabilities:
+            if not self._roots_requested:
+                self._send_roots_request()
+            elif self._client_roots:
+                self.logger.debug(f"Using cached client roots: {self._client_roots}")
+
+    def _handle_roots_changed(self) -> None:
+        """Handle notification that client roots have changed.
+
+        This clears the cached roots and working directory so they
+        will be re-fetched on the next tool call.
+        """
+        self.logger.info("Client roots changed, clearing cached roots")
+        self._client_roots = []
+        self._roots_requested = False  # Allow re-requesting
+
+        # Clear the working directory so it will be re-fetched
+        from .subprocess_introspection import set_working_directory
+
+        set_working_directory(None)
+
+        # Refresh the analyzer's environments (will re-detect when roots arrive)
+        self.mcpydoc.analyzer.refresh_environments()
+
+        # Request fresh roots
+        self._send_roots_request()
+
     async def _get_package_docs(self, args: Dict[str, Any]) -> Dict[str, Any]:
         """Get package documentation."""
         package_name = args.get("package_name")
@@ -370,6 +529,18 @@ class MCPServer:
                     "signature": result.symbol.symbol.signature,
                     "type_hints": result.symbol.type_hints,
                     "parent_class": result.symbol.parent_class,
+                    "methods": (
+                        [
+                            {
+                                "name": m.name,
+                                "signature": m.signature,
+                                "doc_preview": m.doc_preview,
+                            }
+                            for m in result.symbol.symbol.methods
+                        ]
+                        if result.symbol.symbol.methods
+                        else None
+                    ),
                 }
                 if result.symbol
                 else None
@@ -501,11 +672,11 @@ class MCPServer:
                     ),
                     "parameters": [
                         {
-                            "name": param.arg_name,
-                            "type": param.type_name,
-                            "description": param.description,
-                            "default": param.default,
-                            "optional": param.optional,
+                            "name": param.get("name"),
+                            "type": param.get("type"),
+                            "description": param.get("description"),
+                            "default": param.get("default"),
+                            "optional": param.get("is_optional"),
                         }
                         for param in (
                             result.documentation.params if result.documentation else []
@@ -514,12 +685,12 @@ class MCPServer:
                     "returns": (
                         {
                             "type": (
-                                result.documentation.returns.type_name
+                                result.documentation.returns.get("type")
                                 if result.documentation and result.documentation.returns
                                 else None
                             ),
                             "description": (
-                                result.documentation.returns.description
+                                result.documentation.returns.get("description")
                                 if result.documentation and result.documentation.returns
                                 else None
                             ),
@@ -618,21 +789,45 @@ class MCPServer:
             "suggested_next_steps": result.suggested_next_steps,
         }
 
-    async def handle_request(self, request_data: str) -> str:
-        """Handle incoming JSON-RPC request."""
+    async def handle_request(self, request_data: str) -> Optional[str]:
+        """Handle incoming JSON-RPC request or response.
+
+        Returns:
+            JSON response string, or None if this was a response to our request
+        """
         try:
             request = json.loads(request_data)
         except json.JSONDecodeError as e:
             error = self._create_error(-32700, "Parse error", str(e))
             return json.dumps(self._create_response(None, error=error))
 
-        request_id = request.get("id")
+        # Check if this is a response to a server-initiated request
         method = request.get("method")
+        if method is None and ("result" in request or "error" in request):
+            # This is a response, not a request
+            if self._handle_response(request):
+                return None  # Don't send a response back
+            # Unknown response, ignore it
+            self.logger.warning(f"Received response for unknown request: {request}")
+            return None
+
+        request_id = request.get("id")
         params = request.get("params", {})
 
         try:
             if method == "initialize":
                 result = await self._handle_initialize(params)
+            elif method == "notifications/initialized":
+                # Client is ready, request roots immediately so they're likely
+                # available before the first tool call
+                self._ensure_roots_requested()
+                # This is a notification, so no response needed
+                return None
+            elif method == "notifications/roots/list_changed":
+                # Client's workspace roots changed, refresh our cached roots
+                self._handle_roots_changed()
+                # This is a notification, so no response needed
+                return None
             elif method == "tools/list":
                 result = await self._handle_tools_list(params)
             elif method == "tools/call":
@@ -665,11 +860,12 @@ class MCPServer:
                 if not line:
                     continue
 
-                # Handle request
+                # Handle request (may return None if it was a response to our request)
                 response = await self.handle_request(line)
 
-                # Send response to stdout
-                print(response, flush=True)
+                # Only send response if this was a client request (not a response to us)
+                if response is not None:
+                    print(response, flush=True)
 
             except KeyboardInterrupt:
                 break

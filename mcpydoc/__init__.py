@@ -12,6 +12,7 @@ from .exceptions import (
 )
 from .models import (
     DocumentationInfo,
+    MethodSummary,
     ModuleDocumentationResult,
     PackageInfo,
     PackageStructure,
@@ -21,7 +22,7 @@ from .models import (
 )
 from .server import MCPyDoc
 
-__version__ = "1.3.0"
+__version__ = "1.4.0"
 
 __all__ = [
     # Main server class
@@ -32,6 +33,7 @@ __all__ = [
     # Data models
     "PackageInfo",
     "SymbolInfo",
+    "MethodSummary",
     "DocumentationInfo",
     "SymbolSearchResult",
     "PackageStructure",
