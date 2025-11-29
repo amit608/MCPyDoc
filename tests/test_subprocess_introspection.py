@@ -8,15 +8,15 @@ from unittest.mock import MagicMock, Mock, patch
 import pytest
 
 from mcpydoc.subprocess_introspection import (
+    _find_project_root,
+    _is_command_available,
     clear_cache,
     detect_package_manager,
     get_working_directory,
     introspect_package_info,
     introspect_symbol,
-    search_symbols_subprocess,
     is_subprocess_available,
-    _is_command_available,
-    _find_project_root,
+    search_symbols_subprocess,
 )
 
 

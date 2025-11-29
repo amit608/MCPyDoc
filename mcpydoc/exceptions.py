@@ -31,7 +31,7 @@ class PackageNotFoundError(MCPyDocError):
 
         if searched_paths:
             # Check if running in pipx/uvx isolated environment
-            from .env_detection import is_pipx_environment, get_searched_directories
+            from .env_detection import get_searched_directories, is_pipx_environment
 
             in_pipx = any(is_pipx_environment(path) for path in searched_paths)
 
